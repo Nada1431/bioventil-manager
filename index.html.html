@@ -1,0 +1,2780 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BioVentil Manager — Gestion cycle de vie qualité respirateurs</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM — BioVentil Manager
+   Aesthetic: Medical precision + editorial clarity
+   Palette: Deep navy / warm white / clinical teal
+═══════════════════════════════════════════ */
+:root {
+  --navy:    #0f1f38;
+  --navy2:   #162847;
+  --navy3:   #1e3a5f;
+  --teal:    #0d7e77;
+  --teal2:   #0fa699;
+  --teal-lt: #e6f7f6;
+  --amber:   #c97a1a;
+  --amber-lt:#fff8ed;
+  --red:     #c0392b;
+  --red-lt:  #fdf1f0;
+  --green:   #1a7a4a;
+  --green-lt:#edf8f2;
+  --white:   #fafbfc;
+  --gray1:   #f4f6f9;
+  --gray2:   #e8ecf2;
+  --gray3:   #c8d0de;
+  --gray4:   #8896b0;
+  --text:    #1a2540;
+  --text2:   #3d4f6e;
+  --muted:   #6b7d9a;
+  --border:  #dce3ef;
+  --pass-bg: #edf8f2; --pass-text: #1a7a4a; --pass-border: #a8dcbe;
+  --warn-bg: #fff8ed; --warn-text: #c97a1a; --warn-border: #f5d08a;
+  --fail-bg: #fdf1f0; --fail-text: #c0392b; --fail-border: #f5b5b0;
+  --pend-bg: #f4f6f9; --pend-text: #6b7d9a; --pend-border: #c8d0de;
+  --sidebar-w: 220px;
+  --header-h:  56px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Syne',sans-serif;background:var(--white);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ── SIDEBAR ── */
+#sb{
+  position:fixed;top:0;left:0;height:100vh;width:var(--sidebar-w);
+  background:var(--navy);display:flex;flex-direction:column;z-index:100;
+  border-right:1px solid rgba(255,255,255,.06);
+}
+.sb-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-logo-mark{display:flex;align-items:center;gap:10px;}
+.sb-logo-icon{width:34px;height:34px;background:var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-logo-icon svg{width:18px;height:18px;color:#fff;}
+.sb-logo-name{font-size:1.05rem;font-weight:700;color:#fff;letter-spacing:-.3px;}
+.sb-logo-sub{font-size:.6rem;color:rgba(255,255,255,.35);margin-top:2px;letter-spacing:.08em;text-transform:uppercase;font-family:'JetBrains Mono';}
+.sb-nav{flex:1;padding:14px 0;overflow-y:auto;}
+.sb-sect{padding:10px 16px 4px;font-size:.58rem;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.12em;font-family:'JetBrains Mono';}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;font-size:.78rem;color:rgba(255,255,255,.5);border-left:2px solid transparent;transition:all .18s;position:relative;}
+.sb-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.8);}
+.sb-item.active{background:rgba(13,126,119,.15);color:#fff;border-left-color:var(--teal2);font-weight:600;}
+.sb-item svg{width:14px;height:14px;flex-shrink:0;}
+.sb-badge{margin-left:auto;background:rgba(192,57,43,.25);color:#f5a09a;border-radius:10px;padding:1px 6px;font-size:.62rem;font-weight:600;font-family:'JetBrains Mono';}
+.sb-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:.65rem;color:rgba(255,255,255,.25);font-family:'JetBrains Mono';}
+
+/* ── MAIN ── */
+#main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;}
+#topbar{
+  height:var(--header-h);position:sticky;top:0;z-index:50;
+  background:rgba(250,251,252,.95);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 28px;
+}
+.tb-left h2{font-size:.88rem;font-weight:600;color:var(--text);}
+.tb-left p{font-size:.68rem;color:var(--muted);margin-top:1px;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;border:none;font-family:'Syne';font-size:.75rem;font-weight:600;cursor:pointer;transition:all .18s;letter-spacing:.01em;}
+.btn-primary{background:var(--teal);color:#fff;}
+.btn-primary:hover{background:var(--teal2);transform:translateY(-1px);box-shadow:0 3px 10px rgba(13,126,119,.3);}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--teal2);color:var(--teal);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-danger:hover{background:#a93226;}
+.btn-amber{background:var(--amber);color:#fff;}
+.btn svg{width:13px;height:13px;}
+
+/* ── PAGES ── */
+.page{display:none;padding:24px 28px;animation:pgIn .25s ease;}
+.page.active{display:block;}
+@keyframes pgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;transition:box-shadow .2s;}
+.stat:hover{box-shadow:0 2px 12px rgba(15,31,56,.08);}
+.stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;}
+.stat.navy::after{background:var(--navy3);}
+.stat.teal::after{background:var(--teal2);}
+.stat.amber::after{background:var(--amber);}
+.stat.red::after{background:var(--red);}
+.stat-lbl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-family:'JetBrains Mono';}
+.stat-val{font-size:2rem;font-weight:700;line-height:1;font-family:'JetBrains Mono';}
+.stat-val.navy{color:var(--navy3);}
+.stat-val.teal{color:var(--teal);}
+.stat-val.amber{color:var(--amber);}
+.stat-val.red{color:var(--red);}
+.stat-sub{font-size:.68rem;color:var(--muted);margin-top:5px;}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.g13{display:grid;grid-template-columns:1fr 2fr;gap:18px;}
+.g31{display:grid;grid-template-columns:2fr 1fr;gap:18px;}
+
+/* ── CARD ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border);}
+.card-title{font-size:.8rem;font-weight:700;color:var(--text);}
+.card-body{padding:18px;}
+
+/* ── TABLE ── */
+.tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:10px 14px;font-size:.63rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;background:var(--gray1);border-bottom:1px solid var(--border);font-family:'JetBrains Mono';}
+tbody tr{border-bottom:1px solid var(--gray1);transition:background .12s;cursor:pointer;}
+tbody tr:hover{background:#f6f9ff;}
+tbody tr:last-child{border-bottom:none;}
+td{padding:11px 14px;font-size:.78rem;}
+.td-name{font-weight:600;font-size:.8rem;}
+.td-sub{font-size:.68rem;color:var(--muted);margin-top:2px;}
+.td-mono{font-family:'JetBrains Mono';font-size:.72rem;}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700;border:1px solid;font-family:'JetBrains Mono';}
+.b-pass{background:var(--pass-bg);color:var(--pass-text);border-color:var(--pass-border);}
+.b-warn{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border);}
+.b-fail{background:var(--fail-bg);color:var(--fail-text);border-color:var(--fail-border);}
+.b-pend{background:var(--pend-bg);color:var(--pend-text);border-color:var(--pend-border);}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.65rem;background:var(--teal-lt);color:var(--teal);font-family:'JetBrains Mono';font-weight:500;}
+.tag-red{background:var(--fail-bg);color:var(--fail-text);}
+.tag-amber{background:var(--warn-bg);color:var(--warn-text);}
+.tag-navy{background:#eaf0f8;color:var(--navy3);}
+
+/* ── FORM ── */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.fgroup{display:flex;flex-direction:column;gap:5px;}
+.fgroup.full{grid-column:1/-1;}
+label{font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+input,select,textarea{background:var(--gray1);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'Syne';font-size:.78rem;outline:none;transition:border-color .18s,background .18s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--teal2);background:#fff;}
+textarea{resize:vertical;min-height:70px;}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(10,20,40,.5);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:#fff;border:1px solid var(--border);border-radius:14px;padding:24px;width:680px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:mdIn .22s ease;box-shadow:0 20px 60px rgba(10,20,40,.18);}
+.modal-xl{width:860px;}
+@keyframes mdIn{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.modal-title{font-size:.95rem;font-weight:700;}
+.modal-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px;transition:color .15s;}
+.modal-x:hover{color:var(--text);}
+
+/* ── SECTION HEADER ── */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-size:.85rem;font-weight:700;}
+.sec-title span{font-size:.7rem;color:var(--muted);font-weight:400;margin-left:6px;}
+
+/* ── ALERTS ── */
+.alert-list{display:flex;flex-direction:column;gap:8px;}
+.alert-item{display:flex;align-items:flex-start;gap:11px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:12px 14px;cursor:pointer;transition:all .18s;}
+.alert-item:hover{border-color:var(--teal2);box-shadow:0 2px 8px rgba(13,126,119,.1);}
+.alert-item.fail{border-left:3px solid var(--red);}
+.alert-item.warn{border-left:3px solid var(--amber);}
+.alert-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ai-fail{background:var(--fail-bg);color:var(--red);}
+.ai-warn{background:var(--warn-bg);color:var(--amber);}
+.ai-info{background:var(--teal-lt);color:var(--teal);}
+.alert-body{flex:1;}
+.alert-title{font-size:.78rem;font-weight:600;}
+.alert-desc{font-size:.7rem;color:var(--muted);margin-top:2px;line-height:1.5;}
+.alert-time{font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono';}
+
+/* ── TIMELINE ── */
+.tl{display:flex;flex-direction:column;}
+.tl-item{display:flex;gap:13px;padding-bottom:16px;position:relative;}
+.tl-item::before{content:'';position:absolute;left:12px;top:24px;width:1px;bottom:0;background:var(--gray2);}
+.tl-item:last-child::before{display:none;}
+.tl-dot{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;border:1.5px solid;z-index:1;background:#fff;}
+.td-pass{border-color:var(--green);color:var(--green);}
+.td-fail{border-color:var(--red);color:var(--red);}
+.td-warn{border-color:var(--amber);color:var(--amber);}
+.tl-c{flex:1;padding-top:2px;}
+.tl-title{font-size:.78rem;font-weight:600;}
+.tl-meta{font-size:.67rem;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono';}
+
+/* ── PROGRESS ── */
+.prog-bar{height:6px;background:var(--gray2);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width .6s;}
+
+/* ── NC TRACKER (cycle non-conformité) ── */
+.nc-step{display:flex;align-items:center;gap:0;margin-bottom:18px;}
+.nc-s{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+.nc-s::after{content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;background:var(--gray2);z-index:0;}
+.nc-s:last-child::after{display:none;}
+.nc-sc{width:28px;height:28px;border-radius:50%;border:2px solid var(--gray2);background:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;z-index:1;transition:all .3s;color:var(--muted);}
+.nc-sc.done{background:var(--green);border-color:var(--green);color:#fff;}
+.nc-sc.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+.nc-sc.fail-step{background:var(--red);border-color:var(--red);color:#fff;}
+.nc-sl{font-size:.6rem;color:var(--muted);margin-top:5px;text-align:center;max-width:70px;}
+
+/* ── INFO BOXES ── */
+.info-box{padding:11px 14px;border-radius:8px;font-size:.75rem;line-height:1.65;margin-bottom:13px;}
+.ib-teal{background:var(--teal-lt);border:1px solid #a8ddd9;color:var(--teal);}
+.ib-amber{background:var(--amber-lt);border:1px solid #f5d08a;color:#8a5a00;}
+.ib-red{background:var(--red-lt);border:1px solid var(--fail-border);color:var(--red);}
+.ib-navy{background:#eaf0f8;border:1px solid #c0d0e8;color:var(--navy3);}
+
+/* ── VENTILATOR BRAND CARD ── */
+.brand-card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s;}
+.brand-card:hover{border-color:var(--teal2);box-shadow:0 3px 14px rgba(13,126,119,.12);transform:translateY(-1px);}
+.brand-hd{padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.brand-logo{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0;}
+.brand-name{font-size:.85rem;font-weight:700;}
+.brand-models{font-size:.68rem;color:var(--muted);margin-top:2px;}
+.brand-body{padding:12px 16px;border-top:1px solid var(--gray1);}
+.brand-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--gray1);font-size:.75rem;}
+.brand-row:last-child{border-bottom:none;}
+.brand-key{color:var(--muted);font-weight:500;flex-shrink:0;width:130px;}
+.brand-val{color:var(--text);text-align:right;font-size:.73rem;}
+.brand-val.warn{color:var(--amber);font-weight:600;}
+.brand-val.danger{color:var(--red);font-weight:700;}
+.brand-val.ok{color:var(--green);font-weight:600;}
+
+/* ── MEASURE TABLE ── */
+.mtbl{width:100%;border-collapse:collapse;font-size:.76rem;}
+.mtbl th{padding:8px 10px;background:var(--gray1);border:1px solid var(--border);font-size:.63rem;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono';}
+.mtbl td{padding:8px 10px;border:1px solid var(--border);}
+.mtbl tr:hover td{background:var(--gray1);}
+.mb-pass{background:var(--pass-bg);color:var(--pass-text);border-radius:4px;padding:2px 7px;font-size:.65rem;font-weight:700;font-family:'JetBrains Mono';}
+.mb-fail{background:var(--fail-bg);color:var(--fail-text);border-radius:4px;padding:2px 7px;font-size:.65rem;font-weight:700;font-family:'JetBrains Mono';}
+.mb-nd{background:var(--pend-bg);color:var(--pend-text);border-radius:4px;padding:2px 7px;font-size:.65rem;font-family:'JetBrains Mono';}
+.m-input{width:100%;background:var(--gray1);border:1px solid var(--border);border-radius:5px;padding:5px 7px;font-family:'JetBrains Mono';font-size:.74rem;color:var(--text);outline:none;text-align:center;}
+.m-input:focus{border-color:var(--teal2);background:#fff;}
+
+/* ── CALENDAR ── */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dh{font-size:.6rem;text-align:center;color:var(--muted);padding:4px;font-weight:600;font-family:'JetBrains Mono';}
+.cal-d{aspect-ratio:1;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.68rem;cursor:pointer;transition:all .12s;position:relative;}
+.cal-d:hover{background:#e8f4ff;}
+.cal-d.today{background:#e0f2f1;color:var(--teal);font-weight:700;}
+.cal-d.empty{opacity:0;pointer-events:none;}
+.cal-d.has-ev::after{content:'';width:4px;height:4px;border-radius:50%;position:absolute;bottom:2px;}
+.cal-d.ev-plan::after{background:var(--teal2);}
+.cal-d.ev-urg::after{background:var(--amber);}
+.cal-d.ev-late::after{background:var(--red);}
+
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:9px;padding:14px;text-align:center;}
+.kpi-val{font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono';color:var(--teal);}
+.kpi-lbl{font-size:.63rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── NC CARD ── */
+.nc-card{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:10px;cursor:pointer;transition:all .18s;}
+.nc-card:hover{border-color:var(--teal2);box-shadow:0 2px 10px rgba(13,126,119,.1);}
+.nc-card.nc-fail{border-left:4px solid var(--red);}
+.nc-card.nc-warn{border-left:4px solid var(--amber);}
+.nc-card.nc-resolved{border-left:4px solid var(--green);opacity:.75;}
+.nc-card-hd{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;}
+.nc-card-title{font-size:.8rem;font-weight:700;}
+.nc-card-body{padding:8px 14px 12px;font-size:.74rem;color:var(--text2);}
+.nc-card-foot{padding:7px 14px;background:var(--gray1);display:flex;justify-content:space-between;font-size:.67rem;color:var(--muted);font-family:'JetBrains Mono';}
+
+/* ── SEARCH ── */
+.search-wrap{position:relative;}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);width:13px;height:13px;}
+.search-wrap input{padding-left:29px;width:200px;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--navy3);border:1px solid rgba(13,166,153,.4);color:#fff;padding:10px 18px;border-radius:8px;font-size:.78rem;z-index:999;display:none;box-shadow:0 4px 16px rgba(10,20,40,.25);}
+
+/* ── MISC ── */
+.sep{height:1px;background:var(--border);margin:16px 0;}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray1);font-size:.77rem;}
+.mrow:last-child{border-bottom:none;}
+.mkey{color:var(--muted);}
+.empty-st{text-align:center;padding:36px 20px;color:var(--muted);}
+.empty-st svg{width:36px;height:36px;margin-bottom:10px;opacity:.3;}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:.7rem;border:1px solid var(--border);color:var(--muted);background:#fff;cursor:pointer;transition:all .15s;}
+.chip:hover,.chip.active{background:var(--teal-lt);border-color:var(--teal2);color:var(--teal);}
+.chip-fail.active{background:var(--fail-bg);border-color:var(--fail-border);color:var(--red);}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--gray3);border-radius:3px;}
+
+/* ── MOBILE ── */
+#mob-btn{display:none;}
+@media(max-width:768px){
+  #sb{transform:translateX(-100%);transition:transform .3s;}
+  #sb.open{transform:translateX(0);}
+  #main{margin-left:0;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .g2,.g3,.g13,.g31{grid-template-columns:1fr;}
+  .page{padding:14px 16px;}
+  #mob-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:transparent;border:1px solid var(--border);border-radius:7px;cursor:pointer;color:var(--muted);}
+  #mob-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;display:none;}
+  #mob-overlay.open{display:block;}
+}
+</style>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-screen" style="position:fixed;inset:0;background:linear-gradient(135deg,#0f1f38 0%,#1e3a5f 50%,#0d4a44 100%);display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'Syne',sans-serif;">
+  <div style="width:380px;max-width:95vw;">
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:36px;">
+      <div style="width:60px;height:60px;background:rgba(13,126,119,.3);border:2px solid rgba(13,166,153,.4);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0fa699" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <div style="font-size:1.6rem;font-weight:800;color:#fff;letter-spacing:-.5px;">BioVentil Manager</div>
+      <div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:4px;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono'">Gestion qualité respirateurs · v1.0</div>
+    </div>
+    <!-- Card -->
+    <div style="background:rgba(255,255,255,.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:32px;">
+      <h2 style="color:#fff;font-size:.95rem;font-weight:600;margin-bottom:22px;text-align:center;">Connexion à votre espace</h2>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:.65rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;">Identifiant</label>
+        <input id="log-user" type="text" placeholder="nom.prenom@etablissement.ma" style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 13px;color:#fff;font-family:'Syne';font-size:.82rem;outline:none;" onfocus="this.style.borderColor='rgba(13,166,153,.7)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'" onkeydown="if(event.key==='Enter')document.getElementById('log-pass').focus()">
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="font-size:.65rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;">Mot de passe</label>
+        <input id="log-pass" type="password" placeholder="••••••••" style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 13px;color:#fff;font-family:'Syne';font-size:.82rem;outline:none;" onfocus="this.style.borderColor='rgba(13,166,153,.7)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="log-err" style="display:none;background:rgba(192,57,43,.2);border:1px solid rgba(192,57,43,.4);border-radius:7px;padding:8px 12px;font-size:.75rem;color:#f5a09a;margin-bottom:14px;text-align:center;"></div>
+      <button onclick="doLogin()" style="width:100%;background:var(--teal);border:none;border-radius:8px;padding:11px;color:#fff;font-family:'Syne';font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='#0fa699'" onmouseout="this.style.background='var(--teal)'">
+        Se connecter →
+      </button>
+      <button onclick="openRegister()" style="width:100%;background:transparent;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:10px;color:rgba(255,255,255,.7);font-family:'Syne';font-size:.82rem;font-weight:600;cursor:pointer;margin-top:8px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.08)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='rgba(255,255,255,.7)'">
+        + Créer un compte
+      </button>
+      <div style="margin-top:18px;border-top:1px solid rgba(255,255,255,.1);padding-top:14px;">
+        <p style="font-size:.65rem;color:rgba(255,255,255,.35);text-align:center;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em;">Comptes de démonstration</p>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div onclick="fillDemo('ingenieur','bio2026')" style="cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='transparent'"><span style="font-size:.68rem;color:rgba(255,255,255,.5);font-family:'JetBrains Mono'">ingenieur / bio2026</span><span style="font-size:.65rem;color:#0fa699;font-weight:600;">Ingénieure biomédicale</span></div>
+          <div onclick="fillDemo('technicien','tech2026')" style="cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='transparent'"><span style="font-size:.68rem;color:rgba(255,255,255,.5);font-family:'JetBrains Mono'">technicien / tech2026</span><span style="font-size:.65rem;color:#4ade80;font-weight:600;">Technicien biomédical</span></div>
+          <div onclick="fillDemo('responsable','resp2026')" style="cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='transparent'"><span style="font-size:.68rem;color:rgba(255,255,255,.5);font-family:'JetBrains Mono'">responsable / resp2026</span><span style="font-size:.65rem;color:#fbbf24;font-weight:600;">Responsable service</span></div>
+          <div onclick="fillDemo('direction','dir2026')" style="cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='transparent'"><span style="font-size:.68rem;color:rgba(255,255,255,.5);font-family:'JetBrains Mono'">direction / dir2026</span><span style="font-size:.65rem;color:#60a5fa;font-weight:600;">Direction établissement</span></div>
+          <div onclick="fillDemo('fournisseur','four2026')" style="cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='transparent'"><span style="font-size:.68rem;color:rgba(255,255,255,.5);font-family:'JetBrains Mono'">fournisseur / four2026</span><span style="font-size:.65rem;color:#c084fc;font-weight:600;">Distributeur / Fournisseur</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+    <button onclick="openM('m-register')" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:7px 18px;color:rgba(255,255,255,.55);font-family:'Syne',sans-serif;font-size:.76rem;cursor:pointer;">+ Creer un compte (nouvel etablissement)</button>
+    <p style="font-size:.6rem;color:rgba(255,255,255,.2);margin-top:8px;">Acces restreint — Usage interne service biomedical</p>
+  </div>
+  </div>
+</div>
+
+<!-- ═══ APP WRAPPER ═══ -->
+<div id="app-wrapper" style="display:none;">
+<!-- ═══ SIDEBAR ═══ -->
+<aside id="sb">
+  <div class="sb-logo">
+    <div class="sb-logo-mark">
+      <div class="sb-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <div>
+        <div class="sb-logo-name">BioVentil</div>
+        <div class="sb-logo-sub">Manager v1.0</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sect">Principal</div>
+    <div class="sb-item active" onclick="go('dash')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Tableau de bord
+    </div>
+    <div class="sb-item" onclick="go('parc')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Parc équipements
+    </div>
+    <div class="sb-sect">Modules</div>
+    <div class="sb-item" onclick="go('prep')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Préparation pré-CQ
+    </div>
+    <div class="sb-item" onclick="go('nc')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Non-conformités
+      <span class="sb-badge" id="nc-badge">2</span>
+    </div>
+    <div class="sb-item" onclick="go('brands')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Base inter-marques
+    </div>
+    <div class="sb-sect">Suivi</div>
+    <div class="sb-item" onclick="go('plan')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Planification CQ
+    </div>
+    <div class="sb-item" onclick="go('hist')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Historique
+    </div>
+    <div class="sb-item" onclick="go('rpt')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Rapports & KPIs
+    </div>
+    <div class="sb-item" onclick="go('saisie')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Saisir résultat CQ
+    </div>
+    <div class="sb-item" onclick="go('proc')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Procédure CQ
+    </div>
+  </nav>
+  <div class="sb-footer">IEC 62353 · ISO 80601-2-12<br>Complément OneQA + GMAO</div>
+</aside>
+<div id="mob-overlay" onclick="closeMob()"></div>
+
+<!-- ═══ MAIN ═══ -->
+<div id="main">
+  <div id="topbar">
+    <div class="tb-left">
+      <h2 id="pg-title">Tableau de bord</h2>
+      <p id="pg-sub">Vue d'ensemble du parc respirateurs de réanimation</p>
+    </div>
+    <div class="tb-right">
+      <div id="user-badge" style="display:flex;align-items:center;gap:8px;padding:4px 10px;background:var(--gray1);border:1px solid var(--border);border-radius:8px;"></div>
+      <button id="mob-btn" onclick="openMob()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Rechercher…" oninput="gs(this.value)">
+      </div>
+      <!-- Bouton notifications -->
+      <div style="position:relative;">
+        <button id="notif-btn" onclick="toggleNotifPanel()" title="Notifications" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#c0392b;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.58rem;font-weight:700;align-items:center;justify-content:center;font-family:'JetBrains Mono';">0</span>
+        </button>
+        <!-- Panneau notifications -->
+        <div id="notif-panel" style="display:none;position:absolute;top:44px;right:0;width:320px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:300;overflow:hidden;">
+          <div style="padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:.8rem;font-weight:700;">Notifications</span>
+            <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem;">✕</button>
+          </div>
+          <div id="notif-panel-list" style="max-height:320px;overflow-y:auto;">
+            <div style="padding:16px;text-align:center;color:var(--muted);font-size:.8rem;">Connectez-vous pour voir les notifications</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="go('rpt')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exporter
+      </button>
+      <button class="btn btn-primary" onclick="go('saisie')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Saisir CQ
+      </button>
+      <div style="display:flex;align-items:center;gap:7px;padding:4px 12px 4px 5px;background:var(--gray1);border:1px solid var(--border);border-radius:20px;">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#fff;">NL</div>
+        <div id="user-chip-txt" style="font-size:.7rem;font-weight:600;color:var(--text);">Nada Laouidi</div>
+        <button onclick="doLogout()" title="Deconnexion" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.8rem;padding:0 0 0 3px;">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dash">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;">
+        <div style="position:relative;width:96px;height:96px;margin:0 auto 8px;"><canvas id="circ-pass" width="96" height="96"></canvas><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div id="circ-pass-pct" style="font-size:1.2rem;font-weight:800;color:#0d7e77;font-family:'JetBrains Mono';">0%</div></div></div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--text);">Taux conformite</div>
+        <div id="circ-pass-n" style="font-size:.65rem;color:var(--muted);margin-top:2px;">0 PASS / 0</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;">
+        <div style="position:relative;width:96px;height:96px;margin:0 auto 8px;"><canvas id="circ-warn" width="96" height="96"></canvas><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div id="circ-warn-pct" style="font-size:1.2rem;font-weight:800;color:#c97a1a;font-family:'JetBrains Mono';">0%</div></div></div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--text);">Avertissements</div>
+        <div id="circ-warn-n" style="font-size:.65rem;color:var(--muted);margin-top:2px;">0 WARNING</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;">
+        <div style="position:relative;width:96px;height:96px;margin:0 auto 8px;"><canvas id="circ-fail" width="96" height="96"></canvas><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div id="circ-fail-pct" style="font-size:1.2rem;font-weight:800;color:#c0392b;font-family:'JetBrains Mono';">0%</div></div></div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--text);">Hors service</div>
+        <div id="circ-fail-n" style="font-size:.65rem;color:var(--muted);margin-top:2px;">0 FAIL</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;">
+        <div style="position:relative;width:96px;height:96px;margin:0 auto 8px;"><canvas id="circ-cq" width="96" height="96"></canvas><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div id="circ-cq-pct" style="font-size:1.2rem;font-weight:800;color:#1a7a4a;font-family:'JetBrains Mono';">0%</div></div></div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--text);">CQ conformes</div>
+        <div id="circ-cq-n" style="font-size:.65rem;color:var(--muted);margin-top:2px;">0 PASS / 0 CQ</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat navy"><div class="stat-lbl">Total respirateurs</div><div class="stat-val navy" id="s-tot">0</div><div class="stat-sub">Parc complet</div></div>
+      <div class="stat teal"><div class="stat-lbl">Conformes PASS</div><div class="stat-val teal" id="s-pass">0</div><div class="stat-sub" id="s-pct">—</div></div>
+      <div class="stat amber"><div class="stat-lbl">Avertissements</div><div class="stat-val amber" id="s-warn">0</div><div class="stat-sub">Réévaluation requise</div></div>
+      <div class="stat red"><div class="stat-lbl">Hors service FAIL</div><div class="stat-val red" id="s-fail">0</div><div class="stat-sub">Action corrective requise</div></div>
+    </div>
+    <div class="g2" style="margin-bottom:18px;">
+      <div class="card">
+        <div class="card-h"><span class="card-title">Derniers résultats CQ saisis</span><button class="btn btn-outline" style="padding:4px 10px;font-size:.7rem;" onclick="go('hist')">Voir tout →</button></div>
+        <table><thead><tr><th>Équipement</th><th>Date</th><th>Opérateur</th><th>Global</th></tr></thead>
+        <tbody id="d-recent"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="card-title">Alertes actives</span><span id="d-alert-badge"></span></div>
+        <div class="card-body" style="padding-top:10px;"><div class="alert-list" id="d-alerts"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-title">Prochaines échéances</span><button class="btn btn-outline" style="padding:4px 10px;font-size:.7rem;" onclick="go('plan')">Calendrier →</button></div>
+      <table><thead><tr><th>Équipement</th><th>N° série</th><th>Marque / Modèle</th><th>Service</th><th>Dernier CQ</th><th>Prochain CQ</th><th>Délai</th><th>Action</th></tr></thead>
+      <tbody id="d-upcoming"></tbody></table>
+    </div>
+  </div>
+
+  <!-- PARC -->
+  <div class="page" id="page-parc">
+    <div class="sec-hd">
+      <div class="sec-title">Parc de respirateurs <span id="parc-count"></span></div>
+      <div style="display:flex;gap:8px;">
+        <select class="btn btn-outline" id="f-status" onchange="renderParc()" style="padding:7px 11px;cursor:pointer;font-size:.75rem;">
+          <option value="all">Tous</option><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option><option value="PENDING">Non contrôlé</option>
+        </select>
+        <button class="btn btn-primary" onclick="openM('m-addequip')">+ Ajouter</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table><thead><tr><th>Désignation</th><th>N° série / Inventaire</th><th>Marque / Modèle</th><th>Service</th><th>Classe</th><th>Dernier CQ</th><th>Statut</th><th>Prochaine échéance</th><th>Actions</th></tr></thead>
+      <tbody id="parc-body"></tbody></table>
+    </div>
+  </div>
+
+  <!-- PRÉPARATION PRÉ-CQ -->
+  <div class="page" id="page-prep">
+    <div class="sec-hd">
+      <div class="sec-title">Préparation intelligente pré-CQ</div>
+    </div>
+    <div class="g2">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-h"><span class="card-title">Sélectionner l'équipement à contrôler</span></div>
+          <div class="card-body">
+            <div class="fgroup" style="margin-bottom:12px;"><label>Équipement</label><select id="prep-equip" onchange="renderPrepFiche()"></select></div>
+            <div class="fgroup"><label>Motif du CQ</label>
+              <select id="prep-motif"><option>Post-maintenance (curative)</option><option>Périodique (préventive)</option><option>Réception neuf</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;" id="prep-mat-card">
+          <div class="card-h"><span class="card-title">Matériel à emporter sur le terrain</span></div>
+          <div class="card-body" id="prep-mat"></div>
+        </div>
+      </div>
+      <div class="card" id="prep-fiche">
+        <div class="card-h"><span class="card-title">Fiche de préparation</span>
+          <button class="btn btn-outline" style="padding:4px 10px;font-size:.7rem;" onclick="printPrep()">🖨 Imprimer</button>
+        </div>
+        <div class="card-body" id="prep-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NON-CONFORMITÉS -->
+  <div class="page" id="page-nc">
+    <div class="sec-hd">
+      <div class="sec-title">Suivi du cycle de non-conformité</div>
+      <div style="display:flex;gap:7px;">
+        <div class="chip active" onclick="filterNC('all',this)">Toutes</div>
+        <div class="chip chip-fail" onclick="filterNC('open',this)">En cours</div>
+        <div class="chip" onclick="filterNC('resolved',this)">Résolues</div>
+      </div>
+    </div>
+    <div id="nc-list"></div>
+  </div>
+
+  <!-- BASE INTER-MARQUES -->
+  <div class="page" id="page-brands">
+    <div class="sec-hd">
+      <div class="sec-title">Base de connaissances inter-marques</div>
+      <div style="font-size:.72rem;color:var(--muted);">Données techniques issues des manuels constructeurs · IEC 62353 / ISO 80601-2-12</div>
+    </div>
+    <div class="info-box ib-teal" style="margin-bottom:16px;">
+      Cette base documente les particularités de chaque marque et modèle vis-à-vis du protocole de contrôle qualité. Cliquer sur une marque pour voir la fiche détaillée et les points de vigilance spécifiques.
+    </div>
+    <div class="g3" id="brands-grid"></div>
+  </div>
+
+  <!-- PLANIFICATION -->
+  <div class="page" id="page-plan">
+    <div class="g2">
+      <div class="card">
+        <div class="card-h"><span class="card-title">Calendrier — Juillet 2026</span></div>
+        <div class="card-body">
+          <div class="cal" id="cal-grid"></div>
+        </div>
+        <div style="display:flex;gap:14px;padding:0 18px 14px;font-size:.68rem;color:var(--muted);">
+          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--teal2);display:inline-block;margin-right:4px;"></span>Planifié</span>
+          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:4px;"></span>Urgent (&lt;5j)</span>
+          <span><span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;margin-right:4px;"></span>En retard</span>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-h"><span class="card-title">Échéances — tous équipements</span></div>
+          <table><thead><tr><th>Équipement</th><th>Service</th><th>Prochain CQ</th><th>Délai</th><th>Statut</th></tr></thead>
+          <tbody id="plan-body"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-title">Rappels normatifs</span></div>
+          <div class="card-body" style="font-size:.76rem;line-height:1.8;color:var(--text2);">
+            <p><strong>IEC 62353 :</strong> Test électrique après chaque maintenance, et tous les 12 mois minimum.</p>
+            <p style="margin-top:8px;"><strong>ISO 80601-2-12 :</strong> Performances ventilatoires tous les 6 à 12 mois.</p>
+            <p style="margin-top:8px;"><strong>Classe IIb :</strong> Tout résultat FAIL = mise hors service immédiate + déclaration d'incident.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div class="page" id="page-hist">
+    <div class="sec-hd">
+      <div class="sec-title">Historique par équipement</div>
+      <select class="btn btn-outline" id="hist-sel" onchange="renderHist()" style="padding:7px 13px;cursor:pointer;font-size:.75rem;"></select>
+    </div>
+    <div class="g13">
+      <div>
+        <div class="card" style="margin-bottom:14px;"><div class="card-h"><span class="card-title">Fiche équipement</span></div><div class="card-body" id="hist-fiche"></div></div>
+        <div class="card"><div class="card-h"><span class="card-title">Taux de conformité</span></div><div class="card-body" id="hist-conform"></div></div>
+      </div>
+      <div class="card"><div class="card-h"><span class="card-title">Chronologie</span></div><div class="card-body"><div class="tl" id="hist-tl"></div></div></div>
+    </div>
+  </div>
+
+  <!-- RAPPORTS & KPIs -->
+  <div class="page" id="page-rpt">
+    <div class="kpi-row" id="kpi-row"></div>
+    <div class="g2">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-h"><span class="card-title">Rapport individuel équipement</span></div>
+          <div class="card-body">
+            <div class="fgroup" style="margin-bottom:10px;"><label>Équipement</label><select id="rpt-eq" onchange="updateRptCQ()"></select></div>
+            <div class="fgroup" style="margin-bottom:12px;"><label>Résultat CQ</label><select id="rpt-cq"></select></div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="genRpt()">Générer aperçu</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-title">Synthèse parc</span></div>
+          <div class="card-body">
+            <div class="fgroup" style="margin-bottom:10px;"><label>Période</label>
+              <select><option>2ème trimestre 2026</option><option>1er trimestre 2026</option><option>Année 2025–2026</option></select>
+            </div>
+            <button class="btn btn-outline" style="width:100%;justify-content:center;" onclick="toast('Synthèse générée !')">Rapport de synthèse global</button>
+          </div>
+        </div>
+      </div>
+      <div id="rpt-preview-wrap">
+        <div class="empty-st card" id="rpt-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <p>Sélectionnez un équipement pour générer le rapport</p>
+        </div>
+        <div class="card" id="rpt-preview" style="display:none;">
+          <div class="card-h"><span class="card-title">Aperçu rapport</span>
+            <button class="btn btn-outline" style="padding:5px 11px;font-size:.7rem;" onclick="window.print()">🖨 Imprimer</button>
+          </div>
+          <div class="card-body" id="rpt-content" style="font-size:.74rem;line-height:1.75;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAISIE RÉSULTAT CQ -->
+  <div class="page" id="page-saisie">
+    <div style="max-width:780px;margin:0 auto;">
+      <div class="info-box ib-navy" style="margin-bottom:18px;">
+        <strong>ℹ Complémentarité avec OneQA / GMAO :</strong> Le contrôle qualité est réalisé via OneQA (Fluke Biomedical) qui pilote automatiquement l'ESA715 et le VT900A. Le rapport est transmis à la GMAO. Cette saisie enregistre le résultat global dans BioVentil Manager pour le suivi du parc, le tableau de bord et le déclenchement automatique d'une fiche de non-conformité si le résultat est FAIL ou WARNING.
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="card-title">Enregistrement du résultat CQ (depuis OneQA / GMAO)</span></div>
+        <div class="card-body">
+          <div class="fgrid">
+            <div class="fgroup"><label>Équipement *</label><select id="s-equip"></select></div>
+            <div class="fgroup"><label>Date du CQ</label><input type="date" id="s-date"></div>
+            <div class="fgroup"><label>Opérateur *</label><input type="text" id="s-op" placeholder="Nom Prénom"></div>
+            <div class="fgroup"><label>Fonction</label>
+              <select id="s-fn"><option>Ingénieur biomédical</option><option>Technicien biomédical</option><option>Ingénieur de maintenance</option></select>
+            </div>
+            <div class="fgroup"><label>Établissement / Service</label><input type="text" id="s-etab" placeholder="CHU Ibn Sina — Réanimation"></div>
+            <div class="fgroup"><label>Motif du CQ</label>
+              <select id="s-motif"><option>Post-maintenance (curative)</option><option>Périodique (préventive)</option><option>Réception</option></select>
+            </div>
+            <div class="fgroup"><label>N° rapport OneQA</label><input type="text" id="s-oneqa" placeholder="OQA-XXXX"></div>
+            <div class="fgroup"><label>Résultat Volet A (visuel)</label>
+              <select id="s-va"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
+            </div>
+            <div class="fgroup"><label>Résultat Volet B — ESA715 (électrique)</label>
+              <select id="s-vb"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
+            </div>
+            <div class="fgroup"><label>Résultat Volet C — VT900A (pneumatique)</label>
+              <select id="s-vc"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
+            </div>
+            <div class="fgroup full"><label>Observations / Anomalies relevées</label>
+              <textarea id="s-obs" placeholder="Décrire les anomalies détectées, valeurs hors tolérance, actions immédiates prises…"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+            <button class="btn btn-outline" onclick="resetSaisie()">Réinitialiser</button>
+            <button class="btn btn-primary" onclick="saveCQ()">Enregistrer le résultat</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROCÉDURE CQ -->
+  <div class="page" id="page-proc">
+    <div class="info-box ib-red" style="margin-bottom:16px;">
+      <strong>⚠ Avertissements généraux :</strong> Ne jamais réaliser ce contrôle sur un respirateur connecté à un patient. Tout résultat FAIL entraîne la mise hors service immédiate. Débrancher des prises de gaz médicaux avant l'inspection. · Classe IIb · IEC 62353:2014 / ISO 80601-2-12:2023
+    </div>
+    <div class="info-box ib-amber" style="margin-bottom:18px;">
+      <strong>📋 Note d'application :</strong> Cette procédure est universelle et s'applique à tout respirateur adulte de classe IIb indépendamment de la marque. <strong>Tolérances :</strong> les valeurs de ce document sont normatives — les tolérances constructeur priment si elles sont plus strictes (ex: Hamilton ±5% Vt). <strong>Adaptateurs :</strong> Mindray et Löwenstein nécessitent un adaptateur 22→15mm. <strong>Batterie :</strong> désactiver avant ESA715 sur tout appareil équipé d'une batterie interne. <strong>Délai FiO₂ :</strong> 3 à 4 min pour Puritan Bennett, 3 min pour Hamilton. Consulter la fiche inter-marques avant intervention.
+    </div>
+
+    <!-- IDENTIFICATION -->
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-h" style="background:var(--navy);"><span class="card-title" style="color:#fff;">IDENTIFICATION DE L'ÉQUIPEMENT</span></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div class="fgroup"><label>Marque</label><input id="proc-marque" placeholder="ex : Dräger"></div>
+          <div class="fgroup"><label>Modèle</label><input id="proc-modele" placeholder="ex : Evita 800"></div>
+          <div class="fgroup"><label>N° de série</label><input id="proc-sn" placeholder="SN-XXXX"></div>
+          <div class="fgroup"><label>N° d'inventaire</label><input id="proc-inv" placeholder="INV-XXXX"></div>
+          <div class="fgroup"><label>Classe DM</label><input value="IIb" readonly style="background:var(--gray2);"></div>
+          <div class="fgroup"><label>Classe électrique</label><input value="Classe I" readonly style="background:var(--gray2);"></div>
+          <div class="fgroup"><label>Type parties appliquées</label><input value="Type B" readonly style="background:var(--gray2);"></div>
+          <div class="fgroup"><label>Service / Unité</label><input id="proc-service" placeholder="ex : Réanimation adulte"></div>
+          <div class="fgroup"><label>Motif du contrôle</label>
+            <select id="proc-motif"><option>Post-maintenance (curative)</option><option>Périodique (préventive)</option><option>Réception neuf</option></select>
+          </div>
+          <div class="fgroup"><label>Opérateur</label><input id="proc-op" placeholder="Nom Prénom"></div>
+          <div class="fgroup"><label>Fonction</label><select id="proc-fn"><option>Ingénieur biomédical</option><option>Technicien biomédical</option></select></div>
+          <div class="fgroup"><label>Date du contrôle</label><input type="date" id="proc-date"></div>
+        </div>
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="fgroup"><label>Analyseur électrique</label><input value="Fluke ESA715" readonly style="background:var(--gray2);"></div>
+          <div class="fgroup"><label>Analyseur pneumatique</label><input value="Fluke VT900A" readonly style="background:var(--gray2);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOLET A -->
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-h" style="background:#1a3a5c;"><span class="card-title" style="color:#fff;">VOLET A — INSPECTION VISUELLE</span><span class="tag" style="background:rgba(255,255,255,.15);color:#fff;">27 items · Manuel</span></div>
+      <div class="card-body">
+        <div class="info-box ib-teal">PASS = conforme · FAIL = non conforme (arrêt si item critique ⚠) · N/A = non applicable sur ce modèle</div>
+        <div id="volet-a-content"></div>
+        <div style="background:var(--gray1);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:14px;">
+          <p style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">Synthèse Volet A</p>
+          <div style="display:flex;gap:20px;font-size:.8rem;margin-bottom:10px;">
+            <span>✅ PASS : <strong id="va-pass-cnt">0</strong></span>
+            <span>❌ FAIL : <strong id="va-fail-cnt">0</strong></span>
+            <span>➖ N/A : <strong id="va-na-cnt">0</strong></span>
+          </div>
+          <div id="va-decision" style="font-size:.8rem;font-weight:600;padding:8px 12px;border-radius:6px;background:var(--gray2);">Compléter tous les items pour obtenir la décision</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOLET B -->
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-h" style="background:#1a3a5c;"><span class="card-title" style="color:#fff;">VOLET B — SÉCURITÉ ÉLECTRIQUE (Fluke ESA715)</span><span class="tag" style="background:rgba(255,255,255,.15);color:#fff;">IEC 62353:2014</span></div>
+      <div class="card-body">
+        <div class="info-box ib-teal"><strong>Configuration :</strong> Cordon secteur → Equipment Outlet ESA715 · Fil mesure → borne ⏚ boîtier · Fils parties appliquées → connecteurs circuit 22mm · Sélectionner IEC 62353 — Classe I — Type B dans OneQA</div>
+        <p style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Vérification préalable tension secteur</p>
+        <table class="mtbl" style="margin-bottom:14px;">
+          <thead><tr><th>Test</th><th>Valeur attendue</th><th>Valeur mesurée</th><th>Résultat</th></tr></thead>
+          <tbody>
+            <tr><td>Tension L–T (Phase–Terre)</td><td>207–253 V</td><td><input class="m-input" id="b0-lt" type="number" placeholder="V" oninput="calcVB()"></td><td id="rb0-lt"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Tension N–T (Neutre–Terre)</td><td>≈ 0 V</td><td><input class="m-input" id="b0-nt" type="number" placeholder="V" step="0.1" oninput="calcVB()"></td><td id="rb0-nt"><span class="mb-nd">—</span></td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Tests de sécurité électrique — Séquence automatique ESA715</p>
+        <table class="mtbl">
+          <thead><tr><th>Test</th><th>Condition</th><th>Limite IEC 62353</th><th>Valeur mesurée</th><th>Résultat auto</th></tr></thead>
+          <tbody>
+            <tr><td><strong style="color:var(--red);font-size:.65rem;">⚠ CRITIQUE</strong> Résistance de terre</td><td>—</td><td>≤ 0,3 Ω</td><td><input class="m-input" id="b-rt" type="number" step="0.01" placeholder="Ω" oninput="calcVB()"></td><td id="rb-rt"><span class="mb-nd">—</span></td></tr>
+            <tr><td><strong style="color:var(--red);font-size:.65rem;">⚠ CRITIQUE</strong> Résistance d'isolement</td><td>500 V DC</td><td>≥ 2 MΩ</td><td><input class="m-input" id="b-ri" type="number" step="0.1" placeholder="MΩ" oninput="calcVB()"></td><td id="rb-ri"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Courant de fuite équipement</td><td>Condition Normale (CN)</td><td>≤ 1000 µA</td><td><input class="m-input" id="b-fcn" type="number" placeholder="µA" oninput="calcVB()"></td><td id="rb-fcn"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Courant de fuite équipement</td><td>1er Défaut (CPD)</td><td>≤ 5000 µA</td><td><input class="m-input" id="b-fcp" type="number" placeholder="µA" oninput="calcVB()"></td><td id="rb-fcp"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Courant de fuite équipement</td><td>Polarités inversées</td><td>≤ 1000 µA</td><td><input class="m-input" id="b-fi" type="number" placeholder="µA" oninput="calcVB()"></td><td id="rb-fi"><span class="mb-nd">—</span></td></tr>
+            <tr><td><strong style="color:var(--red);font-size:.65rem;">⚠ CRITIQUE</strong> Courant contact boîtier</td><td>CN</td><td>≤ 100 µA</td><td><input class="m-input" id="b-cc" type="number" placeholder="µA" oninput="calcVB()"></td><td id="rb-cc"><span class="mb-nd">—</span></td></tr>
+            <tr><td><strong style="color:var(--red);font-size:.65rem;">⚠ CRITIQUE</strong> Courant fuite patient Type B</td><td>CN</td><td>≤ 100 µA</td><td><input class="m-input" id="b-pcn" type="number" placeholder="µA" oninput="calcVB()"></td><td id="rb-pcn"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Courant fuite patient Type B</td><td>1er Défaut (CPD)</td><td>≤ 500 µA</td><td><input class="m-input" id="b-pcp" type="number" placeholder="µA" oninput="calcVB()"></td><td id="rb-pcp"><span class="mb-nd">—</span></td></tr>
+          </tbody>
+        </table>
+        <div id="vb-synth" style="margin-top:12px;padding:10px 14px;border-radius:7px;background:var(--gray1);font-size:.79rem;display:none;"></div>
+      </div>
+    </div>
+
+    <!-- VOLET C -->
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-h" style="background:#1a3a5c;"><span class="card-title" style="color:#fff;">VOLET C — PERFORMANCE PNEUMATIQUE (Fluke VT900A)</span><span class="tag" style="background:rgba(255,255,255,.15);color:#fff;">ISO 80601-2-12:2023</span></div>
+      <div class="card-body">
+        <div class="info-box ib-teal"><strong>Configuration :</strong> Circuit patient → raccord Y → entrée VT900A · ACCU LUNG → sortie VT900A · Filtre bactérien → port entrée flux · Mode bidirectionnel · Stabilisation 2 min (3–4 min PB/Hamilton)</div>
+
+        <p style="font-size:.7rem;font-weight:700;color:#0d4a44;text-transform:uppercase;margin:0 0 6px;padding:7px 10px;background:#e6f7f6;border-radius:5px;">Test d'étanchéité du circuit</p>
+        <table class="mtbl" style="margin-bottom:14px;">
+          <thead><tr><th>Test</th><th>Procédure</th><th>Limite</th><th>Mesuré</th><th>Résultat</th></tr></thead>
+          <tbody><tr><td><strong style="color:var(--red);font-size:.65rem;">⚠ CRITIQUE</strong> Étanchéité circuit</td><td>Pressuriser 30 cmH₂O — fermer gaz — 60s</td><td>≤ 2 cmH₂O/min</td>
+            <td><input class="m-input" id="c-et" type="number" step="0.1" placeholder="cmH₂O/min" oninput="calcVC()"></td><td id="rc-et"><span class="mb-nd">—</span></td></tr></tbody>
+        </table>
+
+        <p style="font-size:.7rem;font-weight:700;color:#0d4a44;text-transform:uppercase;margin:0 0 6px;padding:7px 10px;background:#e6f7f6;border-radius:5px;">Mode VAC avec PEEP — Régler : Vt=500mL · FR=15 · PEEP=5 · FiO₂=40% · I:E=1:2</p>
+        <table class="mtbl" style="margin-bottom:14px;">
+          <thead><tr><th>Paramètre</th><th>Consigne</th><th>Plage acceptable</th><th>Mesuré</th><th>Résultat</th></tr></thead>
+          <tbody>
+            <tr><td><strong style="color:var(--red);font-size:.65rem;">⚠ CRITIQUE</strong> Volume courant Vt</td><td>500 mL</td><td>450–550 mL</td><td><input class="m-input" id="c-vt" type="number" placeholder="mL" oninput="calcVC()"></td><td id="rc-vt"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Fréquence respiratoire</td><td>15 c/min</td><td>13–17 c/min</td><td><input class="m-input" id="c-fr" type="number" placeholder="/min" oninput="calcVC()"></td><td id="rc-fr"><span class="mb-nd">—</span></td></tr>
+            <tr><td><strong style="color:var(--red);font-size:.65rem;">⚠ CRITIQUE</strong> PEEP</td><td>5 cmH₂O</td><td>3–7 cmH₂O</td><td><input class="m-input" id="c-peep" type="number" step="0.1" placeholder="cmH₂O" oninput="calcVC()"></td><td id="rc-peep"><span class="mb-nd">—</span></td></tr>
+            <tr><td><strong style="color:var(--red);font-size:.65rem;">⚠ CRITIQUE</strong> FiO₂</td><td>40%</td><td>37–43%</td><td><input class="m-input" id="c-fio2" type="number" step="0.1" placeholder="%" oninput="calcVC()"></td><td id="rc-fio2"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Débit inspiratoire de pointe</td><td>40 L/min</td><td>36–44 L/min</td><td><input class="m-input" id="c-db" type="number" step="0.1" placeholder="L/min" oninput="calcVC()"></td><td id="rc-db"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Rapport I:E</td><td>1:2</td><td>Ti : 0,9–1,1 s</td><td><input class="m-input" id="c-ie" type="number" step="0.01" placeholder="Ti (s)" oninput="calcVC()"></td><td id="rc-ie"><span class="mb-nd">—</span></td></tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:.7rem;font-weight:700;color:#0d4a44;text-transform:uppercase;margin:0 0 6px;padding:7px 10px;background:#e6f7f6;border-radius:5px;">Mode VAC sans PEEP — Vt=500 · FR=15 · PEEP=0</p>
+        <table class="mtbl" style="margin-bottom:14px;">
+          <thead><tr><th>Paramètre</th><th>Plage acceptable</th><th>Mesuré</th><th>Résultat</th></tr></thead>
+          <tbody>
+            <tr><td>Volume courant Vt</td><td>450–550 mL</td><td><input class="m-input" id="c-sp-vt" type="number" placeholder="mL" oninput="calcVC()"></td><td id="rc-sp-vt"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Fréquence respiratoire</td><td>13–17 c/min</td><td><input class="m-input" id="c-sp-fr" type="number" placeholder="/min" oninput="calcVC()"></td><td id="rc-sp-fr"><span class="mb-nd">—</span></td></tr>
+            <tr><td>PEEP résiduel</td><td>0–2 cmH₂O</td><td><input class="m-input" id="c-sp-peep" type="number" step="0.1" placeholder="cmH₂O" oninput="calcVC()"></td><td id="rc-sp-peep"><span class="mb-nd">—</span></td></tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:.7rem;font-weight:700;color:#0d4a44;text-transform:uppercase;margin:0 0 6px;padding:7px 10px;background:#e6f7f6;border-radius:5px;">Mode VPAC avec PEEP — Pi=20 · FR=15 · PEEP=5 · FiO₂=40%</p>
+        <table class="mtbl" style="margin-bottom:14px;">
+          <thead><tr><th>Paramètre</th><th>Plage acceptable</th><th>Mesuré</th><th>Résultat</th></tr></thead>
+          <tbody>
+            <tr><td>Pression inspiratoire Pi</td><td>18–22 cmH₂O</td><td><input class="m-input" id="c-vp-pi" type="number" step="0.1" placeholder="cmH₂O" oninput="calcVC()"></td><td id="rc-vp-pi"><span class="mb-nd">—</span></td></tr>
+            <tr><td>PEEP</td><td>3–7 cmH₂O</td><td><input class="m-input" id="c-vp-peep" type="number" step="0.1" placeholder="cmH₂O" oninput="calcVC()"></td><td id="rc-vp-peep"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Fréquence respiratoire</td><td>13–17 c/min</td><td><input class="m-input" id="c-vp-fr" type="number" placeholder="/min" oninput="calcVC()"></td><td id="rc-vp-fr"><span class="mb-nd">—</span></td></tr>
+            <tr><td>FiO₂</td><td>37–43%</td><td><input class="m-input" id="c-vp-fio2" type="number" step="0.1" placeholder="%" oninput="calcVC()"></td><td id="rc-vp-fio2"><span class="mb-nd">—</span></td></tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:.7rem;font-weight:700;color:#0d4a44;text-transform:uppercase;margin:0 0 6px;padding:7px 10px;background:#e6f7f6;border-radius:5px;">Mode VPAC sans PEEP — Pi=20 · FR=15 · PEEP=0</p>
+        <table class="mtbl" style="margin-bottom:14px;">
+          <thead><tr><th>Paramètre</th><th>Plage acceptable</th><th>Mesuré</th><th>Résultat</th></tr></thead>
+          <tbody>
+            <tr><td>Pression inspiratoire Pi</td><td>18–22 cmH₂O</td><td><input class="m-input" id="c-vps-pi" type="number" step="0.1" placeholder="cmH₂O" oninput="calcVC()"></td><td id="rc-vps-pi"><span class="mb-nd">—</span></td></tr>
+            <tr><td>Fréquence respiratoire</td><td>13–17 c/min</td><td><input class="m-input" id="c-vps-fr" type="number" placeholder="/min" oninput="calcVC()"></td><td id="rc-vps-fr"><span class="mb-nd">—</span></td></tr>
+            <tr><td>PEEP résiduel</td><td>0–2 cmH₂O</td><td><input class="m-input" id="c-vps-peep" type="number" step="0.1" placeholder="cmH₂O" oninput="calcVC()"></td><td id="rc-vps-peep"><span class="mb-nd">—</span></td></tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:.7rem;font-weight:700;color:#0d4a44;text-transform:uppercase;margin:0 0 6px;padding:7px 10px;background:#e6f7f6;border-radius:5px;">FiO₂ multi-niveaux (mode unidirectionnel — branche inspiratoire)</p>
+        <table class="mtbl" style="margin-bottom:10px;">
+          <thead><tr><th>FiO₂ réglée</th><th>Plage acceptable</th><th>Mesuré</th><th>Résultat</th></tr></thead>
+          <tbody>
+            <tr><td>21% (air pur)</td><td>18–24%</td><td><input class="m-input" id="c-f21" type="number" step="0.1" placeholder="%" oninput="calcVC()"></td><td id="rc-f21"><span class="mb-nd">—</span></td></tr>
+            <tr><td>60%</td><td>57–63%</td><td><input class="m-input" id="c-f60" type="number" step="0.1" placeholder="%" oninput="calcVC()"></td><td id="rc-f60"><span class="mb-nd">—</span></td></tr>
+            <tr><td>80%</td><td>77–83%</td><td><input class="m-input" id="c-f80" type="number" step="0.1" placeholder="%" oninput="calcVC()"></td><td id="rc-f80"><span class="mb-nd">—</span></td></tr>
+            <tr><td>100%</td><td>97–100%</td><td><input class="m-input" id="c-f100" type="number" step="0.1" placeholder="%" oninput="calcVC()"></td><td id="rc-f100"><span class="mb-nd">—</span></td></tr>
+          </tbody>
+        </table>
+        <div id="vc-synth" style="margin-top:10px;padding:10px 14px;border-radius:7px;background:var(--gray1);font-size:.79rem;display:none;"></div>
+      </div>
+    </div>
+
+    <!-- DÉCISION FINALE -->
+    <div class="card">
+      <div class="card-h" style="background:#0f1f38;"><span class="card-title" style="color:#fff;">DÉCISION FINALE ET RAPPORT</span></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px;">Volet A — Visuel</div>
+            <div id="final-va" style="font-size:1rem;font-weight:700;color:var(--muted);">—</div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px;">Volet B — ESA715</div>
+            <div id="final-vb" style="font-size:1rem;font-weight:700;color:var(--muted);">—</div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px;">Volet C — VT900A</div>
+            <div id="final-vc" style="font-size:1rem;font-weight:700;color:var(--muted);">—</div>
+          </div>
+        </div>
+        <div id="final-decision" style="border-radius:9px;padding:14px;text-align:center;background:var(--gray1);border:2px solid var(--border);">
+          <div style="font-size:.9rem;font-weight:700;color:var(--muted);">Compléter les volets pour obtenir la décision finale</div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="fgroup" style="flex:1;min-width:200px;"><label>Numéro rapport OneQA</label><input id="proc-oneqa" placeholder="OQA-XXXX"></div>
+          <div class="fgroup" style="flex:1;min-width:200px;"><label>Prochain contrôle prévu</label><input type="date" id="proc-next"></div>
+          <div class="fgroup full" style="flex:1 0 100%;"><label>Observations / Signature</label><textarea id="proc-sig" placeholder="Observations finales…"></textarea></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+          <button class="btn btn-outline" onclick="resetProc()">Réinitialiser</button>
+          <button class="btn btn-outline" onclick="window.print()">🖨 Imprimer</button>
+          <button class="btn btn-primary" onclick="saveFromProc()">Enregistrer dans BioVentil Manager</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="m-addequip">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">Ajouter un respirateur au parc</span><button class="modal-x" onclick="closeM('m-addequip')">✕</button></div>
+    <div class="fgrid">
+      <div class="fgroup"><label>Désignation *</label><input id="ae-name" placeholder="Respirateur REA-XX"></div>
+      <div class="fgroup"><label>N° de série *</label><input id="ae-sn" placeholder="SN-XXXX-XXXX"></div>
+      <div class="fgroup"><label>N° d'inventaire</label><input id="ae-inv" placeholder="INV-XXXX"></div>
+      <div class="fgroup"><label>Marque</label>
+        <select id="ae-marque">
+          <option>Dräger</option><option>Hamilton Medical</option><option>Puritan Bennett (Medtronic)</option>
+          <option>Getinge (Maquet)</option><option>Mindray</option><option>GE Healthcare</option>
+          <option>Zoll Medical</option><option>Löwenstein Medical</option><option>Autre</option>
+        </select>
+      </div>
+      <div class="fgroup"><label>Modèle</label><input id="ae-modele" placeholder="Evita 800, G5, SV800…"></div>
+      <div class="fgroup"><label>Service</label>
+        <select id="ae-service"><option>Réanimation adulte</option><option>Réanimation néonatale</option><option>Bloc opératoire</option><option>SMUR</option><option>Urgences</option></select>
+      </div>
+      <div class="fgroup"><label>Classe électrique</label><select id="ae-classe"><option value="I">Classe I</option><option value="II">Classe II</option></select></div>
+      <div class="fgroup"><label>Périodicité CQ</label><select id="ae-period"><option value="6">6 mois</option><option value="12">12 mois</option></select></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-outline" onclick="closeM('m-addequip')">Annuler</button>
+      <button class="btn btn-primary" onclick="addEquip()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="m-cq-detail">
+  <div class="modal modal-xl">
+    <div class="modal-hd"><span class="modal-title" id="cqd-title">Détail du contrôle</span><button class="modal-x" onclick="closeM('m-cq-detail')">✕</button></div>
+    <div id="cqd-content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-brand-detail">
+  <div class="modal modal-xl">
+    <div class="modal-hd"><span class="modal-title" id="brd-title">Fiche marque</span><button class="modal-x" onclick="closeM('m-brand-detail')">✕</button></div>
+    <div id="brd-content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-nc-detail">
+  <div class="modal modal-xl">
+    <div class="modal-hd"><span class="modal-title" id="ncd-title">Suivi non-conformité</span><button class="modal-x" onclick="closeM('m-nc-detail')">✕</button></div>
+    <div id="ncd-content"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DATA — Équipements
+// ═══════════════════════════════════════════════════════════
+const DEMO_EQUIP = [
+  {id:1,name:"Respirateur REA-01",sn:"SN-DR-2021-001",inv:"INV-041",marque:"Dräger",modele:"Evita 800",service:"Réanimation adulte",classe:"I",lastCQ:"2026-01-15",status:"PASS",period:6,nextCQ:"2026-07-15"},
+  {id:2,name:"Respirateur REA-02",sn:"SN-HM-2020-014",inv:"INV-042",marque:"Hamilton Medical",modele:"G5",service:"Réanimation adulte",classe:"I",lastCQ:"2026-02-03",status:"PASS",period:6,nextCQ:"2026-08-03"},
+  {id:3,name:"Respirateur REA-03",sn:"SN-PB-2019-007",inv:"INV-043",marque:"Puritan Bennett (Medtronic)",modele:"980",service:"Réanimation adulte",classe:"I",lastCQ:"2025-11-20",status:"WARNING",period:6,nextCQ:"2026-05-20"},
+  {id:4,name:"Respirateur BLO-01",sn:"SN-GE-2022-003",inv:"INV-044",marque:"GE Healthcare",modele:"Carestation 750",service:"Bloc opératoire",classe:"I",lastCQ:"2026-03-10",status:"PASS",period:12,nextCQ:"2027-03-10"},
+  {id:5,name:"Respirateur URG-01",sn:"SN-ZO-2018-011",inv:"INV-045",marque:"Zoll Medical",modele:"Z Vent",service:"Urgences",classe:"I",lastCQ:"2025-10-05",status:"FAIL",period:6,nextCQ:"2026-04-05"},
+  {id:6,name:"Respirateur NEO-01",sn:"SN-MR-2023-002",inv:"INV-046",marque:"Mindray",modele:"SV800",service:"Réanimation adulte",classe:"I",lastCQ:"2026-04-01",status:"PASS",period:6,nextCQ:"2026-10-01"},
+  {id:7,name:"Respirateur REA-04",sn:"SN-GT-2020-022",inv:"INV-047",marque:"Getinge (Maquet)",modele:"Servo-u",service:"Réanimation adulte",classe:"I",lastCQ:"2026-02-28",status:"PASS",period:6,nextCQ:"2026-08-28"},
+  {id:8,name:"Respirateur SMUR-01",sn:"SN-HM-2021-009",inv:"INV-048",marque:"Hamilton Medical",modele:"T1",service:"SMUR",classe:"I",lastCQ:"2026-01-20",status:"WARNING",period:6,nextCQ:"2026-07-20"},
+  {id:9,name:"Respirateur REA-06",sn:"SN-ALMS-2024-001",inv:"INV-049",marque:"Air Liquide Medical Systems",modele:"MONNAL TEO",service:"Réanimation adulte",classe:"I",lastCQ:"2026-03-15",status:"PASS",period:6,nextCQ:"2026-09-15"},
+  {id:10,name:"Respirateur REA-07",sn:"SN-ALMS-2024-002",inv:"INV-050",marque:"Air Liquide Medical Systems",modele:"MONNAL TEO",service:"Réanimation adulte",classe:"I",lastCQ:null,status:"PENDING",period:6,nextCQ:null},
+];
+
+// ═══════════════════════════════════════════════════════════
+//  DATA — Résultats CQ
+// ═══════════════════════════════════════════════════════════
+const DEMO_CQ = [
+  {id:1,equipId:1,date:"2026-01-15",op:"N. Laouidi",fn:"Ingénieure biomédicale",etab:"CHU Ibn Sina",motif:"Post-maintenance (curative)",oneqa:"OQA-0041",
+   vA:"PASS",vB:"PASS",vC:"PASS",global:"PASS",
+   obs:"Contrôle post-maintenance préventive annuelle. Tous les paramètres conformes IEC 62353 / ISO 80601-2-12."},
+  {id:2,equipId:3,date:"2025-11-20",op:"K. Amama",fn:"Technicien biomédical",etab:"CHU Ibn Sina",motif:"Périodique (préventive)",oneqa:"OQA-0038",
+   vA:"PASS",vB:"WARNING",vC:"PASS",global:"WARNING",
+   obs:"Volet B WARNING : courant de fuite CN à 498 µA (seuil 1000 µA). Valeur inhabituellement élevée pour ce modèle. Réévaluation sous 3 mois recommandée."},
+  {id:3,equipId:5,date:"2025-10-05",op:"K. Amama",fn:"Technicien biomédical",etab:"CHU Ibn Sina",motif:"Post-maintenance (curative)",oneqa:"OQA-0035",
+   vA:"WARNING",vB:"FAIL",vC:"FAIL",global:"FAIL",
+   obs:"FAIL B : résistance de terre 0.38Ω > 0.3Ω, isolement 0.7MΩ < 2MΩ, courant contact 142µA > 100µA. FAIL C : Vt 445mL (écart 11% > ±10%), étanchéité 3.2cmH₂O/min > 2. MISE HORS SERVICE."},
+  {id:4,equipId:6,date:"2026-04-01",op:"N. Laouidi",fn:"Ingénieure biomédicale",etab:"CHU Ibn Sina",motif:"Post-maintenance (curative)",oneqa:"OQA-0052",
+   vA:"PASS",vB:"PASS",vC:"PASS",global:"PASS",
+   obs:"Connexion VT900A via adaptateur 22→15mm Mindray. Tous paramètres conformes. Délai stabilisation FiO₂ 3 min respecté."},
+  {id:5,equipId:9,date:"2026-03-15",op:"N. Laouidi",fn:"Ingenieure biomedicale",etab:"CHU Ibn Sina",motif:"Post-maintenance (curative)",oqa:"OQA-0058",vA:"PASS",vB:"PASS",vC:"PASS",global:"PASS",obs:"MONNAL TEO (ALMS) — Batteries retirees avant ESA715. Filtre HEPA Monnal Clean-In OK. Ensemble expiratoire MONNAL EVA autoclave conforme. Sonde CO2 IRMA deconnectee. Connexion VT900A directe 22mm. Stabilisation FiO2 2 min. Tous parametres conformes ISO 80601-2-12."},
+];
+
+// ═══════════════════════════════════════════════════════════
+//  DATA — Non-conformités
+// ═══════════════════════════════════════════════════════════
+const DEMO_NC = [
+  {id:1,equipId:5,cqId:3,opened:"2025-10-05",status:"open",severity:"FAIL",
+   diagnostic:"Défaillance électrique : résistance de mise à la terre dégradée (câble secteur partiellement dénudé identifié à l'inspection). Défaillance pneumatique : valve expiratoire encrassée causant une fuite de circuit.",
+   actions:[
+     {date:"2025-10-06",action:"Mise hors service immédiate. Étiquette rouge apposée.",done:true},
+     {date:"2025-10-07",action:"Commande pièce : câble secteur REF ZL-SC-001 + valve expiratoire REF ZL-VE-003",done:true},
+     {date:"2025-10-18",action:"Réception pièces et remplacement câble + valve.",done:true},
+     {date:"2025-10-20",action:"Retest CQ prévu — en attente OneQA",done:false},
+   ],
+   resolution:null},
+  {id:2,equipId:3,cqId:2,opened:"2025-11-20",status:"open",severity:"WARNING",
+   diagnostic:"Courant de fuite CN en augmentation progressive sur 3 CQ consécutifs. Cordon secteur présentant une légère détérioration de la gaine identifiée au Volet A.",
+   actions:[
+     {date:"2025-11-21",action:"Surveillance renforcée. Prochain CQ avancé à 3 mois.",done:true},
+     {date:"2025-12-01",action:"Commande cordon secteur REF PB-CS-980 en cours",done:true},
+     {date:"2026-01-10",action:"Remplacement cordon secteur",done:false},
+   ],
+   resolution:null},
+];
+
+// ═══════════════════════════════════════════════════════════
+//  DATA — Base inter-marques (recherches constructeurs)
+// ═══════════════════════════════════════════════════════════
+const BRANDS = [
+  {
+    id:"drager", name:"Dräger", color:"#003366", models:"Evita 800, Evita V800, Infinity V500, Savina 300, Oxylog 3000+",
+    tol_vt:"±8%", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±5%",
+    vt900a_connect:"Raccord 22mm standard — compatible direct",
+    vt900a_issue:"Aucun adaptateur requis",
+    battery:"Batterie interne — désactiver obligatoirement dans menu Système avant ESA715",
+    stabilization:"2 min standard (autotest interne à laisser se terminer avant VT900A)",
+    modes_standard:"VAC, VPAC, CPAP, VNI, Aide Inspiratoire",
+    modes_specific:"AutoFlow® (volume cible en mode pression), APRV (SDRA), SmartCare/PS (sevrage automatisé), HFNC jusqu'à 80 L/min (V800), capnographie intégrée",
+    vigilance:[
+      "Désactiver la batterie dans menu Système > Batterie avant le test ESA715",
+      "Laisser l'autotest de démarrage se terminer complètement avant de connecter le VT900A (2–3 min)",
+      "Si capnographie équipée (V800) : déconnecter le capteur CO₂ avant le test",
+      "Interface HL7/SDC vers EMR : déconnecter la connexion réseau avant ESA715",
+      "AutoFlow® : désactiver le mode et passer en VAC pur avant le test de performance",
+      "Vérifier que SmartCare/PS est désactivé avant le test (il ajuste automatiquement les paramètres)",
+    ],
+    source:"Manuels Dräger Evita V800 (MT-5.0.800650) + Evita 800 (SW 3.n) + IEC 62353 + ISO 80601-2-12"
+  },
+  {
+    id:"hamilton", name:"Hamilton Medical", color:"#c41e3a", models:"G5, C6, C3, C1, T1 (transport), MR1",
+    tol_vt:"±5% (constructeur — plus strict que norme ISO ±10%)", tol_peep:"±0.5 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"Y-piece spécifique Hamilton requis — NE PAS connecter directement sur le port inspiratoire",
+    vt900a_issue:"Capteurs de débit bidirectionnels intégrés dans le circuit : connexion directe risque d'endommager les capteurs",
+    battery:"Hamilton T1 : batterie haute capacité — déconnecter obligatoirement avant ESA715",
+    stabilization:"3 min minimum (selon notice constructeur). Confirmer stabilisation FiO₂ sur affichage avant mesure",
+    modes_standard:"VAC, VPAC, CPAP, VNI, Aide Inspiratoire",
+    modes_specific:"ASV (Adaptive Support Ventilation — garantit volume-minute selon poids), INTELLiVENT-ASV (automatisation complète avec boucle fermée), NAVA optionnel, NIV-ST, P-SIMV",
+    vigilance:[
+      "IMPÉRATIF : utiliser le Y-piece Hamilton spécifique pour connexion VT900A (ne pas connecter directement)",
+      "Délai FiO₂ : attendre 3 min de stabilisation minimum avant toute mesure FiO₂",
+      "Mode ASV nécessite saisie du poids et Vd/Vt patient : désactiver ASV, passer en VAC manuel avant test",
+      "INTELLiVENT-ASV : désactiver obligatoirement (ajustement automatique incompatible avec mesures fixes)",
+      "Hamilton T1 : batterie haute capacité intégrée — déconnecter avant ESA715 (fausse résistance isolement)",
+      "Vérifier version logicielle dans le menu — certaines versions ancienne ont des bugs sur FiO₂",
+    ],
+    source:"Hamilton Medical G5/C6 Operator's Manual + Hamilton ASV Technical Documentation + IEC 62353"
+  },
+  {
+    id:"pb", name:"Puritan Bennett (Medtronic)", color:"#e63900", models:"PB 980, PB 840, PB 560, PB 980S",
+    tol_vt:"±10% (norme ISO)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"Raccord 22mm standard — placer filtre bactérien côté entrée VT900A",
+    vt900a_issue:"Filtre expiratoire intégré sur PB 980 : NE PAS déconnecter avant test",
+    battery:"Pas de batterie interne standard (vérifier si option UPS externe installée)",
+    stabilization:"3 à 4 min obligatoire — délai le plus long parmi les respirateurs courants. Attendre stabilisation affichage panneau",
+    modes_standard:"VAC, VPAC, CPAP, VNI, SIMV, Aide Inspiratoire",
+    modes_specific:"SmartCare® (sevrage automatisé par algorithme), PAV+ (ventilation proportionnelle à l'effort patient), PPS",
+    vigilance:[
+      "DÉLAI CRITIQUE : attendre 3 à 4 min après mise en marche avant mesure FiO₂ (le plus long de tous les respirateurs)",
+      "Capteur O₂ galvanique : durée de vie 12 mois — vérifier impérativement la date d'étalonnage avant test FiO₂",
+      "Filtre expiratoire intégré PB 980 : ne jamais déconnecter (fait partie du circuit de mesure)",
+      "SmartCare® : désactiver avant test (ajuste automatiquement le niveau d'aide inspiratoire)",
+      "PB 980 : rappel constructeur en vigueur — vérifier le bulletin de sécurité avant CQ",
+      "Placer filtre HME côté entrée VT900A (côté inspiratoire) pour protéger les capteurs",
+    ],
+    source:"Puritan Bennett 980 Operator's Manual + Medtronic Service Bulletin + IEC 62353"
+  },
+  {
+    id:"getinge", name:"Getinge (Maquet)", color:"#005f73", models:"Servo-i, Servo-u, Servo-air, Servo-n (néonatal)",
+    tol_vt:"±5% (constructeur)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"Y-piece 22mm standard. Servo-air : module turbine indépendant des gaz muraux",
+    vt900a_issue:"Vérifier alimentation électrique du module turbine avant test sur Servo-air",
+    battery:"Servo-air : 2 batteries remplaçables en fonctionnement (4h autonomie) — désactiver avant ESA715",
+    stabilization:"2 min standard. Vérifier que la connexion PDMS est inactive",
+    modes_standard:"VAC, VPAC, CPAP, VNI, SIMV, Aide Inspiratoire",
+    modes_specific:"NAVA (synchronisation diaphragmatique via cathéter Edi — mode exclusif Getinge), NPS, VNI NAVA, Automode® (bascule auto contrôlé/assisté), HFNC intégré Servo-air, oscillation HF Servo-n",
+    vigilance:[
+      "Câble Edi (NAVA) : déconnecter obligatoirement avant ESA715 (potentiel de tension sur conducteur actif)",
+      "Servo Compass® : désactiver avant test (surveillance active des paramètres — peut interférer)",
+      "Module turbine Servo-air : vérifier le compteur d'heures (durée de vie garantie 50 000h — remplacement nécessaire si dépassé)",
+      "Connexion PDMS (dossier patient électronique) : déconnecter avant tests électriques",
+      "Servo-u avec PulmoVista 500 (EIT) : déconnecter la sonde EIT avant test ESA715",
+      "Batteries Servo-air : désactiver dans menu Batterie avant ESA715",
+    ],
+    source:"Getinge Servo-u/Servo-air Operator's Manual + NAVA Technical Documentation + IEC 62353"
+  },
+  {
+    id:"mindray", name:"Mindray", color:"#1a7a4a", models:"SV800, SV600, SV300, SV850, SV650",
+    tol_vt:"±10% à ±15% selon modèle (vérifier notice constructeur)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"⚠ ADAPTATEUR OBLIGATOIRE : raccord 22mm→15mm spécifique Mindray",
+    vt900a_issue:"Port inspiratoire non standard 15mm — sans adaptateur, connexion VT900A IMPOSSIBLE",
+    battery:"Batterie de secours externe modulaire — retirer avant ESA715",
+    stabilization:"2 min standard",
+    modes_standard:"VAC, VPAC, CPAP, VNI, SIMV, Aide Inspiratoire",
+    modes_specific:"PRVC (Pressure Regulated Volume Control), AMV (Adaptive Minute Ventilation — ajustement auto volume-minute), modules néonatal/pédiatrique interchangeables Plug & Play, sauvegarde air compresseur interne",
+    vigilance:[
+      "CRITIQUE : commander l'adaptateur 22→15mm Mindray AVANT toute campagne de CQ sur ces respirateurs",
+      "Sans adaptateur 22→15mm : toute mesure VT900A est impossible et le Volet C ne peut pas être réalisé",
+      "Batterie de secours externe : retirer du support avant test ESA715",
+      "Interface utilisateur plate non standard : naviguer via menu Service pour désactiver AMV avant test",
+      "Backup air supply (compresseur interne) : vérifier état et pression avant test Volet C",
+      "Modules Plug & Play : s'assurer que le module pédiatrique n'est pas installé pour un CQ adulte",
+    ],
+    source:"Mindray SV800 Operator's Manual (Dec 2019) + SV600/SV800 Training Guide (2021) + IEC 62353"
+  },
+  {
+    id:"ge", name:"GE Healthcare", color:"#0057b8", models:"Carestation 750, Carestation R860, Aisys CS²",
+    tol_vt:"±10% (norme ISO)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"Raccord 22mm standard — compatible direct",
+    vt900a_issue:"Aucun adaptateur requis",
+    battery:"Pas de batterie interne standard. Vérifier si UPS externe présent",
+    stabilization:"5 min (autotest interne plus long que la moyenne — attendre impérativement la fin)",
+    modes_standard:"VAC, VPAC, CPAP, VNI, SIMV, Volume Support",
+    modes_specific:"PRVC, option HeliOx (mélange hélium-oxygène pour traitement des obstructions sévères), Volume Support, AutoFlow®",
+    vigilance:[
+      "Autotest interne : attendre COMPLÈTEMENT la fin (5 min environ) avant de connecter le VT900A",
+      "Option HeliOx : désactiver le module et sélectionner alimentation air médical pur avant tout test FiO₂ (sinon mesure faussée par l'hélium)",
+      "Connexion EMR (dossier patient électronique) : déconnecter le câble réseau avant ESA715",
+      "Aisys CS² (machine anesthésie/réa) : vérifier le mode actif — passer en mode ventilateur ICU pur avant test",
+      "Si équipé vaporisateur anesthésique : isoler et verrouiller avant tout test",
+    ],
+    source:"GE Healthcare Carestation 750/R860 Service Manual + IEC 62353 + ISO 80601-2-12"
+  },
+  {
+    id:"zoll", name:"Zoll Medical", color:"#7b2d8b", models:"Z Vent, Eagle II (SMUR)",
+    tol_vt:"±10% (norme ISO)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"Raccord 22mm standard — appareil compact, vérifier stabilité du montage VT900A",
+    vt900a_issue:"Gabarit compact SMUR : s'assurer de la stabilité mécanique lors de la connexion",
+    battery:"Batterie haute capacité conçue pour transport — déconnecter OBLIGATOIREMENT avant ESA715",
+    stabilization:"2 min standard",
+    modes_standard:"VAC, VPAC, CPAP uniquement (gamme réduite pour usage SMUR)",
+    modes_specific:"Aucun mode avancé (pas de NAVA, ni ASV, ni SmartCare). Modes SMUR allégés uniquement",
+    vigilance:[
+      "Batterie haute capacité transport : déconnecter OBLIGATOIREMENT avant ESA715 (très haute charge résiduelle)",
+      "Capteur O₂ : durée de vie courte 6 à 9 mois (usage SMUR intensif) — vérifier date de calibration systématiquement",
+      "Environnement SMUR hostile : inspection visuelle renforcée (chocs, humidité, poussière)",
+      "Appareil compact : risque de basculement lors de la connexion VT900A — caler l'appareil avant test",
+      "Connexion gaz O₂ bouteille : vérifier la pression résiduelle dans la bouteille avant le test FiO₂",
+    ],
+    source:"Zoll Medical Z Vent Operator's Manual + IEC 62353"
+  },
+  {
+    id:"airliquide", name:"Air Liquide Medical Systems", color:"#005f86",
+    models:"MONNAL TEO",
+    tol_vt:"±10% (ISO 80601-2-12) — recommande ±8% en pratique clinique",
+    tol_peep:"±2 cmH₂O",
+    tol_fio2:"±3%",
+    tol_fr:"±2 c/min",
+    vt900a_connect:"Raccord 22mm standard côté inspiratoire — compatible direct avec VT900A",
+    vt900a_issue:"Technologie TURBINE autonome en air (pas de gaz muraux nécessaires). Connexion VT900A directe possible. Placer filtre bactériologique hydrophobe côté inspiratoire avant le VT900A.",
+    battery:"Batteries extractibles intégrées — DÉCONNECTER obligatoirement avant test ESA715 (risque de fausser la résistance d'isolement). Retirer les batteries du logement avant toute mesure électrique.",
+    stabilization:"2 min minimum. Le MONNAL TEO étant à turbine, il ne nécessite pas de gaz muraux mais attendre la stabilisation de la FiO₂ affichée sur l'écran avant toute mesure.",
+    modes_standard:"VCV (Volume Contrôlé), PCV (Pression Contrôlée), VSA (Aide Inspiratoire), CPAP, VNI",
+    modes_specific:"APRV, NAVA optionnel, Haut Débit Nasal (HFNC), capnographie volumétrique intégrée, monitorage oesophagien (Peso), R/I ratio (recrutabilité), NIF (force inspiratoire négative), RSBI, RCstat (résistance et compliance automatisées), Driving Pressure, Pplat, VTe/PBW",
+    vigilance:[
+      "CRITIQUE : Retirer les batteries extractibles avant le test ESA715 — la batterie intégrée fausse les mesures de résistance d'isolement",
+      "Technologie turbine : le MONNAL TEO ne consomme pas de gaz muraux comprimés — vérifier uniquement l'alimentation électrique avant le Volet C",
+      "Filtre Monnal Clean'In (HEPA) à l'entrée d'air turbine : vérifier son état avant le test (encrassement = performances dégradées)",
+      "Ensemble expiratoire MONNAL EVA : valve expiratoire et capteur de débit à vérifier — nettoyer ou remplacer selon protocole ALMS avant le CQ",
+      "Capnographie intégrée (sonde CO₂) : déconnecter la sonde CO₂ IRMA™ avant le test ESA715 pour éviter toute interférence électrique",
+      "Écran 15 pouces tactile capacitif : vérifier l'absence de rayures profondes affectant la précision tactile (item Volet A critique)",
+      "Mode APRV et NAVA : désactiver ces modes avant connexion VT900A — passer en VCV pur pour les tests Volet C",
+      "Stabilisation FiO₂ : attendre l'affichage stable sur l'écran principal avant de lancer la séquence OneQA Volet C",
+      "Connexion gaz O₂ : vérifier le raccord haute pression O₂ (entrée dédiée sur le panneau gauche) avant le test FiO₂ multi-niveaux",
+      "Entretien ensemble expiratoire : protocole autoclavage Monnal EVA doit être respecté avant tout CQ (risque de contamination croisée)",
+    ],
+    source:"Air Liquide Medical Systems — Site officiel ALMS France (fr.medicaldevice.airliquide.com) · Manuel utilisateur MONNAL TEO (2024) · IEC 62353:2014 · ISO 80601-2-12:2023 · Impomed.dz — Fiche technique MONNAL TEO"
+  },
+  {
+    id:"lowenstein", name:"Löwenstein Medical", color:"#4a4e69", models:"Leoni plus, Lepus (néonatal), Prisma VENT",
+    tol_vt:"±8% adulte / ±5% néonatal (tolérances très strictes petits volumes)", tol_peep:"±0.5 cmH₂O (néonatal)", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"Port néonatal 15mm → adaptateur 22→15mm obligatoire + poumon de test néonatal (ACCU LUNG néonatal)",
+    vt900a_issue:"NE PAS utiliser le poumon de test adulte sur modèle néonatal — compliance incompatible",
+    battery:"Batterie de secours interne — désactiver avant ESA715",
+    stabilization:"2 min. Manipulation extrêmement délicate des capteurs néonataux",
+    modes_standard:"VAC, VPAC, CPAP, HFOV (oscillation haute fréquence néonatale), VNI néonatale",
+    modes_specific:"38 modes ventilatoires invasifs et non-invasifs, HFOV, ventilation à volume garanti néonatale, NAVA néonatal",
+    vigilance:[
+      "Ne pas utiliser pour CQ adulte standard — spécifique néonatal/pédiatrique",
+      "Adaptateur 22→15mm obligatoire + poumon de test ACCU LUNG néonatal (compliance 5 mL/cmH₂O)",
+      "Capteur débit ultra-sensible néonatal : manipulation extrêmement délicate — ne jamais souffler dedans",
+      "HFOV : désactiver ce mode avant toute tentative de test avec VT900A",
+      "Volumes courants très faibles (3–50 mL) : utiliser les ports ultra-low flow du VT900A uniquement",
+    ],
+    source:"Löwenstein Medical Leoni plus Technical Documentation + IEC 62353 + ISO 80601-2-80 (néonatal)"
+  },
+];
+
+// Tableaux de travail mutables — chargés selon l'utilisateur connecté
+var EQUIP = [];
+var CQ    = [];
+var NC    = [];
+
+// ═══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════
+const PG_META = {
+  dash:    {t:"Tableau de bord",            s:"Vue d'ensemble — parc respirateurs de réanimation"},
+  parc:    {t:"Parc d'équipements",          s:"Gestion du parc de respirateurs de réanimation adulte"},
+  prep:    {t:"Préparation intelligente pré-CQ", s:"Fiche de préparation personnalisée avant intervention — Module B"},
+  nc:      {t:"Suivi des non-conformités",   s:"Cycle FAIL → diagnostic → réparation → retest → décision — Module C"},
+  brands:  {t:"Base de connaissances inter-marques", s:"Particularités techniques par marque et modèle — Module B"},
+  plan:    {t:"Planification des contrôles", s:"Calendrier et échéances normatives — Module E"},
+  hist:    {t:"Historique par équipement",   s:"Chronologie des contrôles qualité — Module D"},
+  rpt:     {t:"Rapports & KPIs",             s:"Indicateurs de performance et exports — Module A/D"},
+  saisie:  {t:"Saisir un résultat CQ",       s:"Enregistrement des résultats depuis OneQA / GMAO"},
+};
+
+function go(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('active'));
+  const pg = document.getElementById('page-'+id);
+  if(pg) pg.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(n=>{
+    if(n.getAttribute('onclick')?.includes("'"+id+"'")) n.classList.add('active');
+  });
+  const m = PG_META[id]||{t:id,s:''};
+  document.getElementById('pg-title').textContent = m.t;
+  document.getElementById('pg-sub').textContent = m.s;
+  const renders = {parc:renderParc,nc:renderNC,brands:renderBrands,plan:renderPlan,hist:renderHistInit,rpt:renderRpt,saisie:initSaisie,prep:renderPrepInit,proc:initProc};
+  if(renders[id]) renders[id]();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════
+function badge(s){
+  const m={PASS:'b-pass',WARNING:'b-warn',FAIL:'b-fail',PENDING:'b-pend'};
+  return `<span class="badge ${m[s]||'b-pend'}">${s}</span>`;
+}
+function fmt(d){
+  if(!d) return '—';
+  return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+}
+function daysTo(d){
+  if(!d) return '—';
+  const diff = Math.round((new Date(d)-new Date())/86400000);
+  if(diff<0) return `<span style="color:var(--red);font-weight:700;font-family:'JetBrains Mono'">${Math.abs(diff)}j retard</span>`;
+  if(diff<=5) return `<span style="color:var(--red);font-weight:700;font-family:'JetBrains Mono'">${diff}j</span>`;
+  if(diff<=14) return `<span style="color:var(--amber);font-weight:600;font-family:'JetBrains Mono'">${diff}j</span>`;
+  return `<span style="color:var(--muted);font-family:'JetBrains Mono'">${diff}j</span>`;
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>{t.style.display='none';},2600);
+}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o) o.classList.remove('open');}));
+function openMob(){document.getElementById('sb').classList.add('open');document.getElementById('mob-overlay').classList.add('open');}
+function closeMob(){document.getElementById('sb').classList.remove('open');document.getElementById('mob-overlay').classList.remove('open');}
+document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>{if(window.innerWidth<=768) closeMob();}));
+function gs(v){
+  if(!v) return;
+  const found = EQUIP.filter(e=>e.name.toLowerCase().includes(v.toLowerCase())||e.sn.toLowerCase().includes(v.toLowerCase())||e.marque.toLowerCase().includes(v.toLowerCase()));
+  toast(found.length ? `${found.length} résultat(s) : ${found.map(e=>e.name).join(', ')}` : 'Aucun résultat.');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function renderDash(){
+  if(!document.getElementById('s-tot')) return;
+  const tot=EQUIP.length, pass=EQUIP.filter(e=>e.status==='PASS').length;
+  const warn=EQUIP.filter(e=>e.status==='WARNING').length, fail=EQUIP.filter(e=>e.status==='FAIL').length;
+  document.getElementById('s-tot').textContent=tot;
+  document.getElementById('s-pass').textContent=pass;
+  document.getElementById('s-pct').textContent=Math.round(pass/tot*100)+'% du parc';
+  document.getElementById('s-warn').textContent=warn;
+  document.getElementById('s-fail').textContent=fail;
+
+  const rb=document.getElementById('d-recent');
+  rb.innerHTML='';
+  CQ.slice().reverse().slice(0,5).forEach(c=>{
+    const eq=EQUIP.find(e=>e.id===c.equipId);
+    rb.innerHTML+=`<tr onclick="openCQDetail(${c.id})">
+      <td><div class="td-name">${eq?.name||'—'}</div><div class="td-sub">${eq?.marque} ${eq?.modele}</div></td>
+      <td class="td-mono">${fmt(c.date)}</td>
+      <td style="font-size:.76rem;">${c.op}</td>
+      <td>${badge(c.global)}</td>
+    </tr>`;
+  });
+
+  const failWarn=CQ.filter(c=>c.global!=='PASS');
+  document.getElementById('d-alert-badge').innerHTML=`<span class="badge b-fail">${failWarn.length} alertes</span>`;
+  const da=document.getElementById('d-alerts');
+  da.innerHTML='';
+  failWarn.slice(0,3).forEach(c=>{
+    const eq=EQUIP.find(e=>e.id===c.equipId);
+    da.innerHTML+=`<div class="alert-item ${c.global==='FAIL'?'fail':'warn'}" onclick="openCQDetail(${c.id})">
+      <div class="alert-icon ${c.global==='FAIL'?'ai-fail':'ai-warn'}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="alert-body">
+        <div class="alert-title">${eq?.name} — ${c.global}</div>
+        <div class="alert-desc">${c.obs.substring(0,80)}…</div>
+        <div class="alert-time">${fmt(c.date)} · Cliquer pour détails</div>
+      </div>
+    </div>`;
+  });
+
+  const ub=document.getElementById('d-upcoming');
+  ub.innerHTML='';
+  [...EQUIP].sort((a,b)=>new Date(a.nextCQ)-new Date(b.nextCQ)).slice(0,6).forEach(e=>{
+    ub.innerHTML+=`<tr>
+      <td class="td-name">${e.name}</td>
+      <td class="td-mono" style="font-size:.7rem;">${e.sn}</td>
+      <td><div style="font-weight:500;font-size:.78rem;">${e.marque}</div><div class="td-sub">${e.modele}</div></td>
+      <td style="font-size:.76rem;">${e.service}</td>
+      <td class="td-mono" style="font-size:.7rem;">${fmt(e.lastCQ)}</td>
+      <td class="td-mono" style="font-size:.7rem;">${fmt(e.nextCQ)}</td>
+      <td>${daysTo(e.nextCQ)}</td>
+      <td><button class="btn btn-primary" style="padding:4px 9px;font-size:.68rem;" onclick="go('saisie')">Saisir CQ</button></td>
+    </tr>`;
+  });
+  updateNCBadge();
+}
+
+function updateNCBadge(){
+  const open=NC.filter(n=>n.status==='open').length;
+  document.getElementById('nc-badge').textContent=open||'';
+  document.getElementById('nc-badge').style.display=open?'':'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PARC
+// ═══════════════════════════════════════════════════════════
+function renderParc(){
+  const f=document.getElementById('f-status').value;
+  const list=f==='all'?EQUIP:EQUIP.filter(e=>e.status===f);
+  document.getElementById('parc-count').textContent=`(${list.length})`;
+  const tb=document.getElementById('parc-body');
+  tb.innerHTML='';
+  list.forEach(e=>{
+    tb.innerHTML+=`<tr>
+      <td class="td-name">${e.name}</td>
+      <td><div class="td-mono" style="font-size:.7rem;">${e.sn}</div><div class="td-sub">${e.inv}</div></td>
+      <td><div style="font-weight:600;font-size:.78rem;">${e.marque}</div><div class="td-sub">${e.modele}</div></td>
+      <td style="font-size:.76rem;">${e.service}</td>
+      <td><span class="tag tag-navy">Classe ${e.classe}</span></td>
+      <td class="td-mono" style="font-size:.7rem;">${fmt(e.lastCQ)}</td>
+      <td>${badge(e.status)}</td>
+      <td>${daysTo(e.nextCQ)} <span class="td-mono" style="font-size:.67rem;color:var(--muted);">${fmt(e.nextCQ)}</span></td>
+      <td style="display:flex;gap:5px;">
+        <button class="btn btn-primary" style="padding:4px 8px;font-size:.68rem;" onclick="prepFor(${e.id})">Prép. CQ</button>
+        <button class="btn btn-outline" style="padding:4px 8px;font-size:.68rem;" onclick="histFor(${e.id})">Hist.</button>
+      </td>
+    </tr>`;
+  });
+}
+
+function prepFor(id){document.getElementById('prep-equip').value=id;go('prep');}
+function histFor(id){document.getElementById('hist-sel').value=id;go('hist');}
+function addEquip(){
+  const name=document.getElementById('ae-name').value, sn=document.getElementById('ae-sn').value;
+  if(!name||!sn){toast('Désignation et N° série obligatoires');return;}
+  EQUIP.push({id:EQUIP.length+1,name,sn,inv:document.getElementById('ae-inv').value,marque:document.getElementById('ae-marque').value,modele:document.getElementById('ae-modele').value,service:document.getElementById('ae-service').value,classe:document.getElementById('ae-classe').value,lastCQ:null,status:'PENDING',period:parseInt(document.getElementById('ae-period').value),nextCQ:null});
+  closeM('m-addequip'); renderParc();
+  saveAndToast('Équipement ajouté !');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PRÉPARATION PRÉ-CQ (Module B)
+// ═══════════════════════════════════════════════════════════
+function renderPrepInit(){
+  const sel=document.getElementById('prep-equip');
+  if(!sel.options.length) EQUIP.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name} — ${e.marque} ${e.modele}</option>`);
+  renderPrepFiche();
+}
+function renderPrepFiche(){
+  const id=parseInt(document.getElementById('prep-equip').value);
+  const eq=EQUIP.find(e=>e.id===id);
+  const brand=BRANDS.find(b=>eq?.marque?.toLowerCase().includes(b.id.toLowerCase().split(' ')[0])||eq?.marque?.toLowerCase().startsWith(b.name.toLowerCase().split(' ')[0].toLowerCase()));
+  const motif=document.getElementById('prep-motif').value;
+
+  if(!brand){
+    document.getElementById('prep-content').innerHTML=`<div class="empty-st"><p>Marque non référencée dans la base. Consulter le manuel constructeur.</p></div>`;
+    return;
+  }
+
+  const needsAdapter = brand.vt900a_connect.includes('ADAPT') || brand.vt900a_connect.includes('Y-piece');
+  const needsBattOff = brand.battery.toLowerCase().includes('désactiver') || brand.battery.toLowerCase().includes('déconnecter');
+  const longStab = parseInt(brand.stabilization) >= 3;
+
+  document.getElementById('prep-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="width:44px;height:44px;border-radius:9px;background:${brand.color};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem;color:#fff;flex-shrink:0;">${brand.name.substring(0,2).toUpperCase()}</div>
+      <div><div style="font-weight:700;font-size:.9rem;">${eq.name}</div><div style="font-size:.72rem;color:var(--muted);">${eq.marque} ${eq.modele} · ${eq.sn} · ${eq.service}</div></div>
+      <span style="margin-left:auto;">${badge(eq.status)}</span>
+    </div>
+    ${needsAdapter?`<div class="info-box ib-red"><strong>⚠ ADAPTATEUR REQUIS</strong><br>${brand.vt900a_issue}</div>`:''}
+    ${needsBattOff?`<div class="info-box ib-amber"><strong>🔋 BATTERIE À DÉSACTIVER</strong><br>${brand.battery}</div>`:''}
+    ${longStab?`<div class="info-box ib-teal"><strong>⏱ DÉLAI DE STABILISATION</strong><br>${brand.stabilization}</div>`:''}
+
+    <div style="margin-bottom:14px;">
+      <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Tolérances constructeur (${brand.name})</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${[['Volume courant Vt',brand.tol_vt],['PEEP',brand.tol_peep],['FiO₂',brand.tol_fio2],['Fréquence resp.',brand.tol_fr]].map(([k,v])=>`
+        <div style="background:var(--gray1);border:1px solid var(--border);border-radius:7px;padding:9px 12px;">
+          <div style="font-size:.65rem;color:var(--muted);">${k}</div>
+          <div style="font-size:.85rem;font-weight:700;font-family:'JetBrains Mono';color:var(--navy3);margin-top:3px;">${v}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Points de vigilance spécifiques ${brand.name}</p>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${brand.vigilance.map((v,i)=>`<div style="display:flex;gap:8px;align-items:flex-start;font-size:.74rem;padding:6px 10px;background:${i%2===0?'var(--gray1)':'#fff'};border-radius:5px;">
+          <span style="color:var(--teal);font-weight:700;flex-shrink:0;">${i+1}.</span>${v}
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div>
+      <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Connexion VT900A</p>
+      <div style="background:var(--gray1);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:.77rem;">${brand.vt900a_connect}</div>
+    </div>
+    <div style="margin-top:10px;font-size:.63rem;color:var(--muted);font-style:italic;">Sources : ${brand.source}</div>`;
+
+  document.getElementById('prep-mat').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:.76rem;">
+      ${[
+        {lbl:"Fluke ESA715", note:"Analyseur sécurité électrique"},
+        {lbl:"Fluke VT900A", note:"Analyseur performance pneumatique"},
+        {lbl:"ACCU LUNG II", note:"Poumon de test (compliance 20 mL/cmH₂O adulte)"},
+        {lbl:"Filtre bactérien 22mm", note:"Côté entrée VT900A — usage unique"},
+        {lbl:"Câbles de terre ESA715", note:"Fils de mesure résistance de terre"},
+        needsAdapter?{lbl:"⚠ Adaptateur 22→15mm "+brand.name, note:"OBLIGATOIRE — vérifier la présence avant départ", warn:true}:null,
+        brand.id==='hamilton'?{lbl:"Y-piece Hamilton spécifique", note:"Pour connexion VT900A", warn:true}:null,
+        {lbl:"Tablette / PC avec OneQA", note:"Logiciel Fluke Biomedical"},
+        {lbl:"Manuel technique constructeur", note:"Notice "+brand.name+" "+eq.modele},
+        {lbl:"Fiche de préparation (ce document)", note:"À emporter sur le terrain"},
+      ].filter(Boolean).map((item,i)=>`
+      <div style="display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:6px;background:${item.warn?'var(--fail-bg)':i%2===0?'var(--gray1)':'#fff'};border:1px solid ${item.warn?'var(--fail-border)':'var(--border)'};">
+        <span style="color:${item.warn?'var(--red)':'var(--teal)'};font-size:.8rem;">●</span>
+        <span style="font-weight:${item.warn?700:500};color:${item.warn?'var(--red)':'var(--text)'};">${item.lbl}</span>
+        <span style="color:var(--muted);font-size:.68rem;margin-left:auto;">${item.note}</span>
+      </div>`).join('')}
+    </div>`;
+}
+function printPrep(){window.print();}
+
+// ═══════════════════════════════════════════════════════════
+//  NON-CONFORMITÉS (Module C)
+// ═══════════════════════════════════════════════════════════
+let ncFilter = 'all';
+function filterNC(f,el){
+  ncFilter=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderNC();
+}
+function renderNC(){
+  let list=NC;
+  if(ncFilter==='open') list=NC.filter(n=>n.status==='open');
+  if(ncFilter==='resolved') list=NC.filter(n=>n.status==='resolved');
+  const el=document.getElementById('nc-list');
+  if(!list.length){el.innerHTML='<div class="empty-st"><p>Aucune non-conformité dans cette catégorie.</p></div>';return;}
+  el.innerHTML='';
+  list.forEach(nc=>{
+    const eq=EQUIP.find(e=>e.id===nc.equipId);
+    const done=nc.actions.filter(a=>a.done).length;
+    const tot=nc.actions.length;
+    el.innerHTML+=`<div class="nc-card nc-${nc.severity.toLowerCase()}${nc.status==='resolved'?' nc-resolved':''}" onclick="openNCDetail(${nc.id})">
+      <div class="nc-card-hd">
+        <div>
+          <div class="nc-card-title">${eq?.name} — NC-${String(nc.id).padStart(3,'0')}</div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:2px;">${eq?.marque} ${eq?.modele} · Ouvert le ${fmt(nc.opened)}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          ${badge(nc.severity)}
+          <span class="tag ${nc.status==='resolved'?'':'tag-amber'}">${nc.status==='resolved'?'Résolu':'En cours'}</span>
+        </div>
+      </div>
+      <div class="nc-card-body">${nc.diagnostic.substring(0,120)}…</div>
+      <div class="nc-card-foot">
+        <span>Actions : ${done}/${tot} réalisées</span>
+        <div class="prog-bar" style="width:120px;"><div class="prog-fill" style="width:${Math.round(done/tot*100)}%;background:${nc.severity==='FAIL'?'var(--red)':'var(--amber)'};"></div></div>
+        <span>Cliquer pour détails →</span>
+      </div>
+    </div>`;
+  });
+}
+
+function openNCDetail(id){
+  const nc=NC.find(n=>n.id===id);
+  const eq=EQUIP.find(e=>e.id===nc.equipId);
+  document.getElementById('ncd-title').textContent=`Non-conformité NC-${String(nc.id).padStart(3,'0')} — ${eq?.name}`;
+  const steps=['FAIL détecté','Diagnostic','Commande pièce','Réparation','Retest','Décision finale'];
+  const doneCount=nc.actions.filter(a=>a.done).length;
+  const stepIdx=Math.min(doneCount, steps.length-1);
+  document.getElementById('ncd-content').innerHTML=`
+    <div style="display:flex;gap:0;margin-bottom:20px;" class="nc-step">
+      ${steps.map((s,i)=>`<div class="nc-s"><div class="nc-sc ${i<stepIdx?'done':i===stepIdx?'active':''}">${i<stepIdx?'✓':i+1}</div><div class="nc-sl">${s}</div></div>`).join('')}
+    </div>
+    <div class="g2" style="margin-bottom:16px;">
+      <div style="background:var(--gray1);border-radius:8px;padding:12px 14px;font-size:.76rem;">
+        <p style="font-weight:700;margin-bottom:6px;">Équipement</p>
+        <div class="mrow"><span class="mkey">Désignation</span><span>${eq?.name}</span></div>
+        <div class="mrow"><span class="mkey">Marque/Modèle</span><span>${eq?.marque} ${eq?.modele}</span></div>
+        <div class="mrow"><span class="mkey">N° série</span><span class="td-mono" style="font-size:.72rem;">${eq?.sn}</span></div>
+        <div class="mrow"><span class="mkey">Service</span><span>${eq?.service}</span></div>
+        <div class="mrow" style="border:none"><span class="mkey">Statut actuel</span><span>${badge(eq?.status)}</span></div>
+      </div>
+      <div style="background:var(--fail-bg);border:1px solid var(--fail-border);border-radius:8px;padding:12px 14px;font-size:.76rem;">
+        <p style="font-weight:700;color:var(--red);margin-bottom:6px;">Diagnostic</p>
+        <p style="line-height:1.65;">${nc.diagnostic}</p>
+        <div style="margin-top:10px;"><span style="font-weight:600;">Sévérité :</span> ${badge(nc.severity)}</div>
+        <div style="margin-top:5px;"><span style="font-weight:600;">Ouvert le :</span> ${fmt(nc.opened)}</div>
+      </div>
+    </div>
+    <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Suivi des actions correctives</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      ${nc.actions.map((a,i)=>`
+      <div style="display:flex;gap:11px;align-items:flex-start;padding:9px 12px;background:${a.done?'var(--pass-bg)':'var(--gray1)'};border:1px solid ${a.done?'var(--pass-border)':'var(--border)'};border-radius:7px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:${a.done?'var(--green)':'var(--gray3)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.62rem;color:#fff;font-weight:700;">${a.done?'✓':i+1}</div>
+        <div style="flex:1;">
+          <div style="font-size:.77rem;font-weight:${a.done?600:400};color:${a.done?'var(--green)':'var(--text)'};">${a.action}</div>
+          <div style="font-size:.66rem;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono';">${fmt(a.date)} · ${a.done?'Réalisé':'En attente'}</div>
+        </div>
+        ${!a.done?`<button class="btn btn-outline" style="padding:3px 8px;font-size:.67rem;" onclick="markDone(${nc.id},${i})">Marquer réalisé</button>`:''}
+      </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-outline" onclick="addNCAction(${nc.id})">+ Ajouter une action</button>
+      ${nc.status==='open'?`<button class="btn btn-primary" onclick="resolveNC(${nc.id})">Clore la non-conformité</button>`:''}
+    </div>`;
+  openM('m-nc-detail');
+}
+
+function markDone(ncId,actionIdx){
+  const nc=NC.find(n=>n.id===ncId);
+  if(nc) nc.actions[actionIdx].done=true;
+  openNCDetail(ncId); toast('Action marquée comme réalisée');
+}
+function resolveNC(id){
+  const nc=NC.find(n=>n.id===id);
+  if(nc){nc.status='resolved';nc.resolution=new Date().toISOString().split('T')[0];}
+  closeM('m-nc-detail'); renderNC(); updateNCBadge(); toast('Non-conformité clôturée');
+}
+function addNCAction(id){
+  const action=prompt('Description de la nouvelle action :');
+  if(!action) return;
+  const nc=NC.find(n=>n.id===id);
+  if(nc) nc.actions.push({date:new Date().toISOString().split('T')[0],action,done:false});
+  openNCDetail(id); toast('Action ajoutée');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BASE INTER-MARQUES (Module B)
+// ═══════════════════════════════════════════════════════════
+function renderBrands(){
+  const grid=document.getElementById('brands-grid');
+  grid.innerHTML='';
+  BRANDS.forEach(b=>{
+    const needsAdapter = b.vt900a_connect.includes('ADAPT') || b.vt900a_connect.includes('Y-piece');
+    grid.innerHTML+=`<div class="brand-card" onclick="openBrandDetail('${b.id}')">
+      <div class="brand-hd">
+        <div class="brand-logo" style="background:${b.color};">${b.name.substring(0,2).toUpperCase()}</div>
+        <div><div class="brand-name">${b.name}</div><div class="brand-models">${b.models.split(',')[0]}…</div></div>
+        ${needsAdapter?'<span class="tag tag-red" style="margin-left:auto;">Adaptateur</span>':''}
+      </div>
+      <div class="brand-body">
+        <div class="brand-row"><span class="brand-key">Tolérance Vt</span><span class="brand-val ${b.tol_vt.includes('±5%')?'ok':''}">${b.tol_vt.split(' ')[0]}</span></div>
+        <div class="brand-row"><span class="brand-key">Connexion VT900A</span><span class="brand-val ${needsAdapter?'danger':'ok'}" style="font-size:.68rem;">${needsAdapter?'⚠ Adaptateur requis':'22mm standard'}</span></div>
+        <div class="brand-row"><span class="brand-key">Stabilisation FiO₂</span><span class="brand-val ${parseInt(b.stabilization)>=3?'warn':''}">${b.stabilization.split(' ')[0]} ${b.stabilization.split(' ')[1]}</span></div>
+        <div class="brand-row" style="border:none;"><span class="brand-key">Points vigilance</span><span class="brand-val">${b.vigilance.length} identifiés</span></div>
+      </div>
+    </div>`;
+  });
+}
+
+function openBrandDetail(id){
+  const b=BRANDS.find(x=>x.id===id);
+  document.getElementById('brd-title').textContent=`Fiche technique — ${b.name}`;
+  document.getElementById('brd-content').innerHTML=`
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px;padding:14px;background:var(--gray1);border-radius:9px;">
+      <div style="width:50px;height:50px;border-radius:10px;background:${b.color};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;color:#fff;">${b.name.substring(0,2).toUpperCase()}</div>
+      <div>
+        <div style="font-size:1.05rem;font-weight:700;">${b.name}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">Modèles : ${b.models}</div>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-bottom:16px;">
+      <div>
+        <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Tolérances constructeur</p>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:.76rem;">
+          ${[['Volume courant Vt',b.tol_vt],['PEEP',b.tol_peep],['FiO₂',b.tol_fio2],['Fréquence respiratoire',b.tol_fr]].map(([k,v])=>`
+          <div class="mrow"><span class="mkey">${k}</span><strong style="font-family:'JetBrains Mono';">${v}</strong></div>`).join('')}
+        </div>
+      </div>
+      <div>
+        <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Connexion Fluke VT900A</p>
+        <div class="info-box ${b.vt900a_issue.includes('ADAPT')||b.vt900a_issue.includes('IMPOS')?'ib-red':'ib-teal'}">
+          <strong>Connexion :</strong> ${b.vt900a_connect}<br><strong>Particularité :</strong> ${b.vt900a_issue}
+        </div>
+        <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 6px;">Batterie / Alimentation</p>
+        <div class="info-box ib-amber">${b.battery}</div>
+        <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:8px 0 6px;">Stabilisation FiO₂</p>
+        <div style="font-size:.76rem;padding:8px 11px;background:var(--gray1);border-radius:6px;">${b.stabilization}</div>
+      </div>
+    </div>
+
+    <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Modes ventilatoires</p>
+    <div class="g2" style="margin-bottom:14px;">
+      <div><p style="font-size:.7rem;color:var(--muted);margin-bottom:5px;">Standards (testés au CQ)</p><div style="font-size:.75rem;line-height:1.7;">${b.modes_standard}</div></div>
+      <div><p style="font-size:.7rem;color:var(--muted);margin-bottom:5px;">Spécifiques (non testés au CQ standard)</p><div style="font-size:.75rem;line-height:1.7;">${b.modes_specific}</div></div>
+    </div>
+
+    <p style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Points de vigilance (${b.vigilance.length})</p>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px;">
+      ${b.vigilance.map((v,i)=>`<div style="display:flex;gap:9px;align-items:flex-start;font-size:.76px;padding:8px 12px;background:${i%2===0?'var(--gray1)':'#fff'};border-radius:6px;border:1px solid var(--border);">
+        <span style="color:var(--red);font-weight:700;flex-shrink:0;font-size:.8rem;">⚠</span>
+        <span style="font-size:.76rem;">${v}</span>
+      </div>`).join('')}
+    </div>
+    <p style="font-size:.65rem;color:var(--muted);font-style:italic;">Sources : ${b.source}</p>`;
+  openM('m-brand-detail');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PLANIFICATION
+// ═══════════════════════════════════════════════════════════
+function renderPlan(){
+  const cg=document.getElementById('cal-grid');
+  const days=['L','M','M','J','V','S','D'];
+  cg.innerHTML=days.map(d=>`<div class="cal-dh">${d}</div>`).join('');
+  for(let i=0;i<2;i++) cg.innerHTML+=`<div class="cal-d empty"></div>`;
+  for(let d=1;d<=31;d++){
+    let cls='cal-d';
+    if([15,20].includes(d)) cls+=' has-ev ev-plan';
+    if([22,28].includes(d)) cls+=' has-ev ev-urg';
+    if([5,10].includes(d)) cls+=' has-ev ev-late';
+    cg.innerHTML+=`<div class="${cls}">${d}</div>`;
+  }
+  const pb=document.getElementById('plan-body');
+  pb.innerHTML='';
+  [...EQUIP].sort((a,b)=>new Date(a.nextCQ)-new Date(b.nextCQ)).forEach(e=>{
+    pb.innerHTML+=`<tr>
+      <td class="td-name" style="font-size:.78rem;">${e.name}</td>
+      <td style="font-size:.74rem;">${e.service}</td>
+      <td class="td-mono" style="font-size:.7rem;">${fmt(e.nextCQ)}</td>
+      <td>${daysTo(e.nextCQ)}</td>
+      <td>${badge(e.status)}</td>
+    </tr>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HISTORIQUE
+// ═══════════════════════════════════════════════════════════
+function renderHistInit(){
+  const sel=document.getElementById('hist-sel');
+  if(!sel.options.length) EQUIP.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name}</option>`);
+  renderHist();
+}
+function renderHist(){
+  const id=parseInt(document.getElementById('hist-sel').value);
+  const eq=EQUIP.find(e=>e.id===id);
+  const cqs=CQ.filter(c=>c.equipId===id);
+  document.getElementById('hist-fiche').innerHTML=`
+    <div class="mrow"><span class="mkey">Désignation</span><strong>${eq.name}</strong></div>
+    <div class="mrow"><span class="mkey">N° série</span><span class="td-mono" style="font-size:.7rem;">${eq.sn}</span></div>
+    <div class="mrow"><span class="mkey">N° inventaire</span><span class="td-mono" style="font-size:.7rem;">${eq.inv}</span></div>
+    <div class="mrow"><span class="mkey">Marque / Modèle</span>${eq.marque} ${eq.modele}</div>
+    <div class="mrow"><span class="mkey">Service</span>${eq.service}</div>
+    <div class="mrow"><span class="mkey">Périodicité</span><span class="tag">${eq.period} mois</span></div>
+    <div class="mrow"><span class="mkey">Dernier CQ</span><span class="td-mono" style="font-size:.7rem;">${fmt(eq.lastCQ)}</span></div>
+    <div class="mrow" style="border:none"><span class="mkey">Statut</span>${badge(eq.status)}</div>`;
+  const tot=cqs.length, p=cqs.filter(c=>c.global==='PASS').length;
+  const rate=tot?Math.round(p/tot*100):0;
+  const col=rate>=80?'var(--green)':rate>=60?'var(--amber)':'var(--red)';
+  document.getElementById('hist-conform').innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:.78rem;"><span style="color:var(--muted);">Taux de conformité</span><strong style="color:${col};">${rate}%</strong></div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${rate}%;background:${col};"></div></div>
+    <div style="display:flex;gap:14px;margin-top:9px;font-size:.7rem;color:var(--muted);">${tot} contrôles · <span style="color:var(--green);">${p} PASS</span> · <span style="color:var(--red);">${tot-p} non conf.</span></div>`;
+  const tl=document.getElementById('hist-tl');
+  if(!cqs.length){tl.innerHTML='<div class="empty-st"><p>Aucun CQ enregistré.</p></div>';return;}
+  tl.innerHTML=cqs.slice().reverse().map(c=>`
+    <div class="tl-item">
+      <div class="tl-dot td-${c.global.toLowerCase()}">${c.global==='PASS'?'✓':c.global==='FAIL'?'✗':'!'}</div>
+      <div class="tl-c">
+        <div class="tl-title">${fmt(c.date)} — ${badge(c.global)}</div>
+        <div class="tl-meta">${c.op} · ${c.motif}</div>
+        <div style="font-size:.71rem;color:var(--muted);margin-top:3px;">A:${c.vA} · B:${c.vB} · C:${c.vC}</div>
+        <button class="btn btn-outline" style="padding:3px 8px;font-size:.67rem;margin-top:5px;" onclick="openCQDetail(${c.id})">Voir détails</button>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RAPPORTS & KPIs (Module A + D)
+// ═══════════════════════════════════════════════════════════
+function renderRpt(){
+  const tot=EQUIP.length, pass=EQUIP.filter(e=>e.status==='PASS').length;
+  const fail=EQUIP.filter(e=>e.status==='FAIL').length;
+  const openNC=NC.filter(n=>n.status==='open').length;
+  const avgDays = Math.round(CQ.reduce((a,c)=>{const eq=EQUIP.find(e=>e.id===c.equipId);return a+(eq?.period*30||180);},0)/CQ.length);
+  document.getElementById('kpi-row').innerHTML=`
+    <div class="kpi"><div class="kpi-val">${Math.round(pass/tot*100)}%</div><div class="kpi-lbl">Taux conformité parc</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:${fail>0?'var(--red)':'var(--green)'};">${fail}</div><div class="kpi-lbl">Équipements hors service</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:${openNC>0?'var(--amber)':'var(--green)'};">${openNC}</div><div class="kpi-lbl">NC en cours de traitement</div></div>`;
+  const sel=document.getElementById('rpt-eq');
+  if(!sel.options.length){ EQUIP.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name}</option>`); sel.onchange=updateRptCQ; }
+  updateRptCQ();
+}
+function updateRptCQ(){
+  const id=parseInt(document.getElementById('rpt-eq').value);
+  const sel2=document.getElementById('rpt-cq');
+  sel2.innerHTML='';
+  const list=CQ.filter(c=>c.equipId===id);
+  list.forEach(c=>sel2.innerHTML+=`<option value="${c.id}">CQ ${fmt(c.date)} — ${c.global}</option>`);
+  if(!list.length) sel2.innerHTML='<option>Aucun CQ enregistré</option>';
+}
+function genRpt(){
+  const cId=parseInt(document.getElementById('rpt-cq').value);
+  const c=CQ.find(x=>x.id===cId);
+  if(!c){toast('Aucun CQ sélectionné');return;}
+  const eq=EQUIP.find(e=>e.id===c.equipId);
+  const gc={PASS:'var(--green)',WARNING:'var(--amber)',FAIL:'var(--red)'};
+  const bgc={PASS:'var(--pass-bg)',WARNING:'var(--warn-bg)',FAIL:'var(--fail-bg)'};
+  document.getElementById('rpt-empty').style.display='none';
+  document.getElementById('rpt-preview').style.display='block';
+  document.getElementById('rpt-content').innerHTML=`
+    <div style="text-align:center;padding:12px 0 10px;border-bottom:2px solid var(--border);margin-bottom:12px;">
+      <div style="font-family:'Lora';font-size:1rem;font-weight:600;">RAPPORT DE CONTRÔLE QUALITÉ POST-MAINTENANCE</div>
+      <div style="font-size:.68rem;color:var(--muted);">Respirateurs de réanimation · IEC 62353:2014 / ISO 80601-2-12:2023</div>
+      <div style="font-size:.65rem;color:var(--muted);">${c.etab} · Service ${eq?.service}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;">
+      ${[['Équipement',eq?.name],['N° série',eq?.sn],['N° inventaire',eq?.inv||'—'],['Marque / Modèle',`${eq?.marque} ${eq?.modele}`],['Classe DM','IIb (Classe '+eq?.classe+')'],['Opérateur',c.op],['Fonction',c.fn],['Date',fmt(c.date)],['Motif',c.motif],['N° OneQA',c.oneqa]].map(([k,v])=>`<div style="font-size:.72rem;"><strong>${k} : </strong>${v}</div>`).join('')}
+    </div>
+    <div style="border:2px solid ${gc[c.global]};border-radius:7px;padding:8px;text-align:center;margin-bottom:10px;background:${bgc[c.global]};">
+      <strong style="color:${gc[c.global]};font-size:.88rem;">DÉCISION : ${c.global==='PASS'?'REMIS EN SERVICE ✓':c.global==='WARNING'?'SURVEILLANCE RENFORCÉE ⚠':'HORS SERVICE IMMÉDIAT ✗'}</strong>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;text-align:center;font-size:.72rem;">
+      ${[['A — Visuel',c.vA],['B — ESA715',c.vB],['C — VT900A',c.vC]].map(([l,r])=>`<div style="border:1px solid var(--border);border-radius:6px;padding:7px;"><div style="color:var(--muted);margin-bottom:3px;">${l}</div><strong style="color:${gc[r]}">${r}</strong></div>`).join('')}
+    </div>
+    <p style="font-size:.7rem;font-weight:700;color:var(--muted);margin-bottom:4px;">Observations</p>
+    <p style="font-size:.74rem;background:var(--gray1);border-radius:5px;padding:8px 10px;margin-bottom:10px;">${c.obs}</p>
+    <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);border-top:1px solid var(--border);padding-top:7px;">
+      <span>BioVentil Manager · Complément OneQA / GMAO</span>
+      <span>Prochain CQ : ${fmt(eq?.nextCQ)}</span>
+    </div>`;
+  toast('Rapport généré !');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SAISIE CQ
+// ═══════════════════════════════════════════════════════════
+function initSaisie(){
+  const sel=document.getElementById('s-equip');
+  if(!sel.options.length) EQUIP.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name} — ${e.marque} ${e.modele}</option>`);
+  document.getElementById('s-date').value=new Date().toISOString().split('T')[0];
+}
+function resetSaisie(){
+  ['s-op','s-etab','s-oneqa','s-obs'].forEach(id=>{const el=document.getElementById(id);if(el) el.value='';});
+  document.getElementById('s-va').value='PASS';
+  document.getElementById('s-vb').value='PASS';
+  document.getElementById('s-vc').value='PASS';
+  toast('Formulaire réinitialisé');
+}
+function saveCQ(){
+  const op=document.getElementById('s-op').value;
+  if(!op){toast('Nom de l\'opérateur obligatoire');return;}
+  const equipId=parseInt(document.getElementById('s-equip').value);
+  const vA=document.getElementById('s-va').value;
+  const vB=document.getElementById('s-vb').value;
+  const vC=document.getElementById('s-vc').value;
+  let global='PASS';
+  if(vA==='FAIL'||vB==='FAIL'||vC==='FAIL') global='FAIL';
+  else if(vA==='WARNING'||vB==='WARNING'||vC==='WARNING') global='WARNING';
+  const date=document.getElementById('s-date').value;
+  const newCQ={id:CQ.length+1,equipId,date,op,fn:document.getElementById('s-fn').value,etab:document.getElementById('s-etab').value||'—',motif:document.getElementById('s-motif').value,oneqa:document.getElementById('s-oneqa').value||`OQA-${String(CQ.length+1).padStart(4,'0')}`,vA,vB,vC,global,obs:document.getElementById('s-obs').value||'CQ réalisé via OneQA / GMAO.'};
+  CQ.push(newCQ);
+  const eq=EQUIP.find(e=>e.id===equipId);
+  if(eq){
+    eq.status=global; eq.lastCQ=date;
+    const d=new Date(date); d.setMonth(d.getMonth()+eq.period);
+    eq.nextCQ=d.toISOString().split('T')[0];
+  }
+  // Ouvrir NC automatiquement si FAIL ou WARNING
+  if(global==='FAIL'||global==='WARNING'){
+    NC.push({id:NC.length+1,equipId,cqId:newCQ.id,opened:date,status:'open',severity:global,
+      diagnostic:`${global} détecté au CQ du ${fmt(date)}. Volet A:${vA}, Volet B:${vB}, Volet C:${vC}. ${newCQ.obs}`,
+      actions:[{date,action:`Résultat ${global} enregistré. Fiche NC ouverte automatiquement.`,done:true}],resolution:null});
+    toast(`${global} enregistré — Fiche de non-conformité NC-${String(NC.length).padStart(3,'0')} ouverte automatiquement !`);
+  } else {
+    toast('Résultat PASS enregistré avec succès !');
+  }
+  renderDash(); updateNCBadge();
+  saveData();
+  setTimeout(()=>go(global!=='PASS'?'nc':'hist'), 1000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DÉTAIL CQ (modal)
+// ═══════════════════════════════════════════════════════════
+function openCQDetail(id){
+  const c=CQ.find(x=>x.id===id);
+  const eq=EQUIP.find(e=>e.id===c.equipId);
+  document.getElementById('cqd-title').textContent=`${eq?.name} — CQ du ${fmt(c.date)}`;
+  const gc={PASS:'var(--green)',WARNING:'var(--amber)',FAIL:'var(--red)'};
+  const bgc={PASS:'var(--pass-bg)',WARNING:'var(--warn-bg)',FAIL:'var(--fail-bg)'};
+  document.getElementById('cqd-content').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+      ${[['A','Inspection visuelle','Manuel',c.vA],['B','Sécurité élec. ESA715','IEC 62353',c.vB],['C','Performance pneum. VT900A','ISO 80601-2-12',c.vC]].map(([v,l,n,r])=>`
+      <div style="border:2px solid ${gc[r]};border-radius:9px;padding:12px;text-align:center;background:${bgc[r]};">
+        <div style="font-size:.62rem;color:var(--muted);margin-bottom:5px;">Volet ${v} · ${l}</div>
+        <div style="font-size:1rem;font-weight:700;color:${gc[r]};">${r}</div>
+        <div style="font-size:.6rem;color:var(--muted);margin-top:3px;">${n}</div>
+      </div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:.76rem;background:var(--gray1);padding:12px;border-radius:8px;">
+      ${[['Équipement',eq?.name],['N° série',eq?.sn],['Marque/Modèle',`${eq?.marque} ${eq?.modele}`],['Service',eq?.service],['Opérateur',c.op],['Fonction',c.fn],['Établissement',c.etab],['Motif',c.motif],['N° OneQA',c.oneqa||'—'],['Date',fmt(c.date)]].map(([k,v])=>`<div><strong>${k} :</strong> ${v}</div>`).join('')}
+    </div>
+    <div style="background:var(--gray1);border-radius:7px;padding:10px 12px;margin-bottom:12px;">
+      <p style="font-size:.68rem;color:var(--muted);margin-bottom:4px;font-weight:600;">Observations</p>
+      <p style="font-size:.77rem;line-height:1.65;">${c.obs}</p>
+    </div>
+    <div style="border:2px solid ${gc[c.global]};border-radius:8px;padding:10px;text-align:center;background:${bgc[c.global]};">
+      <strong style="color:${gc[c.global]};font-size:.9rem;">DÉCISION : ${c.global==='PASS'?'REMIS EN SERVICE ✓':c.global==='WARNING'?'SURVEILLANCE RENFORCÉE ⚠':'HORS SERVICE IMMÉDIAT ✗'}</strong>
+    </div>`;
+  openM('m-cq-detail');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+// renderDash called after login
+// Pré-remplir saisie et préparation
+document.addEventListener('DOMContentLoaded',()=>{
+  EQUIP.forEach(e=>{
+    ['s-equip','prep-equip','hist-sel','rpt-eq'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&!el.options.length) el.innerHTML+=`<option value="${e.id}">${e.name}</option>`;
+    });
+  });
+});
+
+// =========================================================
+// AUTH — LOGIN / LOGOUT / REGISTER
+// =========================================================
+var USERS = [
+  {u:'ingenieur',   p:'bio2026',  name:'Nada Laouidi',        role:'Ingenieure biomedicale',              etab:'CHU Ibn Sina',           color:'#0d7e77'},
+  {u:'technicien',  p:'tech2026', name:'Karim Amama',          role:'Technicien biomedical',               etab:'CHU Ibn Sina',           color:'#1a7a4a'},
+  {u:'responsable', p:'resp2026', name:'Dr. Salma Idrissi',    role:'Responsable service biomedical',      etab:'CHU Ibn Sina',           color:'#c97a1a'},
+  {u:'direction',   p:'dir2026',  name:'Direction Medicale',   role:'Direction etablissement',             etab:'CHU Ibn Sina',           color:'#003366'},
+  {u:'fournisseur', p:'four2026', name:'3Medical',             role:'Distributeur officiel', etab:'3Medical', color:'#005f86', brand:'airliquide'}
+];
+var currentUser = null;
+
+function openRegister() {
+  var m = document.getElementById('m-register');
+  if (m) {
+    m.classList.add('open');
+    m.style.zIndex = '99999';
+  }
+}
+
+function closeRegister() {
+  var m = document.getElementById('m-register');
+  if (m) m.classList.remove('open');
+}
+
+function doLogin() {
+  var u = (document.getElementById('log-user').value || '').trim().toLowerCase();
+  var p = (document.getElementById('log-pass').value || '').trim();
+  var err = document.getElementById('log-err');
+  if (!u || !p) {
+    err.textContent = 'Veuillez saisir votre identifiant et mot de passe.';
+    err.style.display = 'block';
+    return;
+  }
+  var found = null;
+  for (var i = 0; i < USERS.length; i++) {
+    if (USERS[i].u === u && USERS[i].p === p) { found = USERS[i]; break; }
+  }
+  if (!found) {
+    err.textContent = 'Identifiants incorrects. Veuillez reessayer.';
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  currentUser = found;
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-wrapper').style.display = 'block';
+  var chip = document.getElementById('user-chip-txt');
+  if (chip) chip.textContent = found.name + ' · ' + (found.etab || found.role);
+
+  // Charger les données via Firebase ou localStorage
+  loadData(found.u).then(function() {
+    setTimeout(function() { renderDash(); applyRoleUI(); startNotifications(); }, 100);
+    showFirebaseBanner();
+  }).catch(function() {
+    setTimeout(function() { renderDash(); applyRoleUI(); startNotifications(); }, 100);
+  });
+}
+
+function fillDemo(u, p) {
+  document.getElementById('log-user').value = u;
+  document.getElementById('log-pass').value = p;
+  document.getElementById('log-err').style.display = 'none';
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-wrapper').style.display = 'none';
+  document.getElementById('log-user').value = '';
+  document.getElementById('log-pass').value = '';
+}
+
+function toggleDistFields() {
+  var role = document.getElementById('reg-role').value;
+  var df = document.getElementById('dist-fields');
+  if (df) df.style.display = (role === 'Distributeur / Fournisseur') ? 'block' : 'none';
+}
+
+function toggleBrandField() {
+  var role = document.getElementById('reg-role');
+  var bf = document.getElementById('brand-field');
+  if (!role || !bf) return;
+  bf.style.display = (role.value === 'Distributeur') ? 'block' : 'none';
+}
+
+function doRegister() {
+  var name = document.getElementById('reg-name').value.trim();
+  var etab = document.getElementById('reg-etab').value.trim();
+  var role = document.getElementById('reg-role').value;
+  var u    = document.getElementById('reg-user').value.trim().toLowerCase();
+  var p    = document.getElementById('reg-pass').value;
+  var p2   = document.getElementById('reg-pass2').value;
+  var err  = document.getElementById('reg-err');
+
+  // Champs distributeur
+  var societe = '';
+  var brand = '';
+  if (role === 'Distributeur / Fournisseur') {
+    societe = (document.getElementById('reg-societe').value || '').trim();
+    brand   = (document.getElementById('reg-brand').value || '').trim();
+    if (!societe) { err.textContent='Veuillez saisir le nom de votre société.'; err.style.display='block'; return; }
+    if (!brand)   { err.textContent='Veuillez sélectionner la marque que vous commercialisez.'; err.style.display='block'; return; }
+  }
+
+  if (!name || !etab || !u || !p) { err.textContent='Tous les champs sont obligatoires.'; err.style.display='block'; return; }
+  if (p !== p2)   { err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
+  if (p.length < 6){ err.textContent='Mot de passe trop court (6 caractères minimum).'; err.style.display='block'; return; }
+  for (var i=0;i<USERS.length;i++) { if(USERS[i].u===u){err.textContent='Identifiant déjà utilisé.';err.style.display='block';return;} }
+
+  var accessMap = {'Ingenieur biomedical':'all','Technicien biomedical':'tech','Responsable service biomedical':'resp','Direction etablissement':'dir','Distributeur / Fournisseur':'dist','Distributeur':'dist','Ingénieur biomédical':'all','Technicien biomédical':'tech','Responsable service biomédical':'resp','Direction établissement':'dir'};
+  var isDist = (role === 'Distributeur / Fournisseur' || role === 'Distributeur');
+  var newUser = {
+    u: u, p: p,
+    name: isDist ? (societe||name) : name,
+    role: isDist ? ('Distributeur — ' + (societe||etab)) : (role + ' — ' + etab),
+    etab: isDist ? (societe||etab) : etab,
+    color: isDist ? '#005f86' : '#2563eb',
+    access: accessMap[role] || 'tech',
+    brand: isDist ? brand : null,
+    brandId: isDist ? brand : null
+  };
+  USERS.push(newUser);
+  // Enregistrer dans DIST_BRAND si fournisseur
+  if (role === 'Distributeur / Fournisseur') {
+    DIST_BRAND[u] = brand;
+  }
+
+  err.style.display = 'none';
+  closeM('m-register');
+  document.getElementById('log-user').value = u;
+  document.getElementById('log-pass').value = p;
+  toast('Compte créé ! Connectez-vous avec vos identifiants.');
+}
+
+// Enter key on password field
+document.addEventListener('DOMContentLoaded', function() {
+  var lp = document.getElementById('log-pass');
+  if (lp) lp.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  var lu = document.getElementById('log-user');
+  if (lu) lu.addEventListener('keydown', function(e){ if(e.key==='Enter') { var lp2=document.getElementById('log-pass'); if(lp2) lp2.focus(); } });
+});
+
+// =========================================================
+// CIRCULAR CHARTS
+// =========================================================
+function drawArc(id, pct, color) {
+  var c = document.getElementById(id);
+  if (!c || !c.getContext) return;
+  var ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 100, 100);
+  ctx.beginPath(); ctx.arc(50,50,38,0,Math.PI*2);
+  ctx.strokeStyle='#e8ecf2'; ctx.lineWidth=10; ctx.stroke();
+  if (pct > 0) {
+    ctx.beginPath(); ctx.arc(50,50,38,-Math.PI/2,-Math.PI/2+(Math.PI*2*pct/100));
+    ctx.strokeStyle=color; ctx.lineWidth=10; ctx.lineCap='round'; ctx.stroke();
+  }
+}
+
+function renderCircles() {
+  var tot  = EQUIP.length;
+  var pass = EQUIP.filter(function(e){return e.status==='PASS';}).length;
+  var warn = EQUIP.filter(function(e){return e.status==='WARNING';}).length;
+  var fail = EQUIP.filter(function(e){return e.status==='FAIL';}).length;
+  var cqP  = CQ.filter(function(c){return c.global==='PASS';}).length;
+  var cqT  = CQ.length;
+  var pPct = tot?Math.round(pass/tot*100):0;
+  var wPct = tot?Math.round(warn/tot*100):0;
+  var fPct = tot?Math.round(fail/tot*100):0;
+  var cPct = cqT?Math.round(cqP/cqT*100):0;
+  drawArc('circ-pass',pPct,'#0d7e77');
+  drawArc('circ-warn',wPct,'#c97a1a');
+  drawArc('circ-fail',fPct,'#c0392b');
+  drawArc('circ-cq',  cPct,'#1a7a4a');
+  var set = function(id,v){ var e=document.getElementById(id); if(e) e.textContent=v; };
+  set('circ-pass-pct', pPct+'%'); set('circ-pass-n', pass+' PASS / '+tot);
+  set('circ-warn-pct', wPct+'%'); set('circ-warn-n', warn+' WARNING');
+  set('circ-fail-pct', fPct+'%'); set('circ-fail-n', fail+' FAIL');
+  set('circ-cq-pct',   cPct+'%'); set('circ-cq-n',   cqP+' PASS / '+cqT+' CQ');
+}
+
+var _origRD = renderDash;
+renderDash = function() { _origRD(); renderCircles(); };
+
+// =========================================================
+// PROCEDURE GUIDED — VOLETS A B C
+// =========================================================
+var VA_SEC=[
+  {title:"Boitier et interface utilisateur",items:[
+    {id:"a1",t:"Boitier sans choc, fissure, deformation ou trace de liquide",c:true},
+    {id:"a2",t:"Ecran intact, sans fissure ni rayure profonde"},
+    {id:"a3",t:"Commandes physiques presentes et fonctionnelles",c:true},
+    {id:"a4",t:"Barre ou voyant d'alarme lumineux fonctionnel",c:true},
+    {id:"a5",t:"Grilles de ventilation degagees et non obstruees"},
+    {id:"a6",t:"Chariot ou pied mobile stable, freins fonctionnels"},
+    {id:"a7",t:"Ports de communication presents et non endommages"},
+  ]},
+  {title:"Alimentation electrique",items:[
+    {id:"b1",t:"Cordon secteur intact, sans coupure ni trace de brulure",c:true},
+    {id:"b2",t:"Prise secteur propre, broches de terre presentes",c:true},
+    {id:"b3",t:"Batterie de secours presente et chargee"},
+    {id:"b4",t:"Date de remplacement batterie dans les delais"},
+    {id:"b5",t:"Module alimentation secours (si equipe) en bon etat"},
+  ]},
+  {title:"Circuit patient et connexions pneumatiques",items:[
+    {id:"c1",t:"Connecteur inspiratoire 22mm intact",c:true},
+    {id:"c2",t:"Connecteur expiratoire 22mm intact",c:true},
+    {id:"c3",t:"Valve expiratoire propre, sans depot"},
+    {id:"c4",t:"Filtre bacteriologique present et non perime",c:true},
+    {id:"c5",t:"Filtre HME present et en bon etat"},
+    {id:"c6",t:"Raccord gaz O2 haute pression en bon etat"},
+    {id:"c7",t:"Raccord air medical haute pression en bon etat"},
+    {id:"c8",t:"Capteur O2 dans sa date de validite"},
+    {id:"c9",t:"Humidificateur chauffant en bon etat"},
+    {id:"c10",t:"Piege a eau propre et vide"},
+  ]},
+  {title:"Systeme d'alarmes",items:[
+    {id:"d1",t:"Alarmes sonores fonctionnelles a la mise sous tension",c:true},
+    {id:"d2",t:"Alarmes visuelles fonctionnelles",c:true},
+    {id:"d3",t:"Alarme de debranchement patient declenchee au test",c:true},
+    {id:"d4",t:"Alarme de coupure secteur declenchee au test"},
+    {id:"d5",t:"Autotest de demarrage realise sans erreur",c:true},
+    {id:"d6",t:"Historique des alarmes - aucune alarme critique non resolue"},
+  ]},
+  {title:"Documentation",items:[
+    {id:"e1",t:"Carnet de maintenance present et a jour"},
+    {id:"e2",t:"Date du dernier etalonnage capteur O2 renseignee"},
+    {id:"e3",t:"Version logicielle notee dans le carnet"},
+    {id:"e4",t:"Manuel d'utilisation disponible"},
+  ]},
+];
+var VB_TESTS=[
+  {id:"b1",test:"Tension L-T",cond:"-",lim:"207-253 V",chk:function(v){return v>=207&&v<=253;}},
+  {id:"b2",test:"Tension N-T",cond:"-",lim:"0 V",chk:function(v){return v<=2;}},
+  {id:"b3",test:"Resistance de terre",cond:"-",lim:"<= 0,3 O",chk:function(v){return v<=0.3;}},
+  {id:"b4",test:"Resistance isolement (500V)",cond:"-",lim:">= 2 MO",chk:function(v){return v>=2;}},
+  {id:"b5",test:"Courant fuite equipement",cond:"CN",lim:"<= 1000 uA",chk:function(v){return v<=1000;}},
+  {id:"b6",test:"Courant fuite equipement",cond:"CPD",lim:"<= 5000 uA",chk:function(v){return v<=5000;}},
+  {id:"b7",test:"Courant fuite equipement",cond:"Polarites inversees",lim:"<= 1000 uA",chk:function(v){return v<=1000;}},
+  {id:"b8",test:"Courant contact boitier",cond:"CN",lim:"<= 100 uA",chk:function(v){return v<=100;}},
+  {id:"b9",test:"Courant fuite patient Type B",cond:"CN",lim:"<= 100 uA",chk:function(v){return v<=100;}},
+  {id:"b10",test:"Courant fuite patient Type B",cond:"CPD",lim:"<= 500 uA",chk:function(v){return v<=500;}},
+];
+var VC_GROUPS=[
+  {title:"Etancheite circuit",tests:[{id:"c0",p:"Etancheite",cons:"-",tol:"<= 2 cmH2O/min",chk:function(v){return v<=2;}}]},
+  {title:"VAC avec PEEP (Vt=500mL FR=15 PEEP=5 FiO2=40%)",tests:[
+    {id:"c1",p:"Volume courant Vt",cons:"500 mL",tol:"450-550 mL",chk:function(v){return v>=450&&v<=550;}},
+    {id:"c2",p:"Frequence respiratoire",cons:"15 c/min",tol:"13-17",chk:function(v){return v>=13&&v<=17;}},
+    {id:"c3",p:"PEEP",cons:"5 cmH2O",tol:"3-7",chk:function(v){return v>=3&&v<=7;}},
+    {id:"c4",p:"FiO2",cons:"40%",tol:"37-43%",chk:function(v){return v>=37&&v<=43;}},
+    {id:"c5",p:"Debit inspiratoire pointe",cons:"40 L/min",tol:"36-44",chk:function(v){return v>=36&&v<=44;}},
+  ]},
+  {title:"VAC sans PEEP",tests:[
+    {id:"c6",p:"Volume courant Vt",cons:"500 mL",tol:"450-550 mL",chk:function(v){return v>=450&&v<=550;}},
+    {id:"c7",p:"Frequence respiratoire",cons:"15 c/min",tol:"13-17",chk:function(v){return v>=13&&v<=17;}},
+    {id:"c8",p:"PEEP residuel",cons:"0",tol:"0-2 cmH2O",chk:function(v){return v<=2;}},
+  ]},
+  {title:"VPAC avec PEEP (Pi=20 FR=15 PEEP=5 FiO2=40%)",tests:[
+    {id:"c9",p:"Pression inspiratoire Pi",cons:"20 cmH2O",tol:"18-22",chk:function(v){return v>=18&&v<=22;}},
+    {id:"c10",p:"PEEP",cons:"5 cmH2O",tol:"3-7",chk:function(v){return v>=3&&v<=7;}},
+    {id:"c11",p:"Frequence respiratoire",cons:"15 c/min",tol:"13-17",chk:function(v){return v>=13&&v<=17;}},
+    {id:"c12",p:"FiO2",cons:"40%",tol:"37-43%",chk:function(v){return v>=37&&v<=43;}},
+  ]},
+  {title:"FiO2 multi-niveaux",tests:[
+    {id:"c13",p:"FiO2 = 21% (air pur)",cons:"21%",tol:"18-24%",chk:function(v){return v>=18&&v<=24;}},
+    {id:"c14",p:"FiO2 = 60%",cons:"60%",tol:"57-63%",chk:function(v){return v>=57&&v<=63;}},
+    {id:"c15",p:"FiO2 = 80%",cons:"80%",tol:"77-83%",chk:function(v){return v>=77&&v<=83;}},
+    {id:"c16",p:"FiO2 = 100%",cons:"100%",tol:"97-100%",chk:function(v){return v>=97;}},
+  ]},
+];
+var pSt = {A:{},B:{},C:{}};
+
+function initProc(){
+  Object.keys(pSt.A).forEach(function(k){delete pSt.A[k];});
+  Object.keys(pSt.B).forEach(function(k){delete pSt.B[k];});
+  Object.keys(pSt.C).forEach(function(k){delete pSt.C[k];});
+  _renderVA(); _renderVB(); _renderVC(); _updDec();
+}
+function _renderVA(){
+  var el=document.getElementById('proc-A'); if(!el) return;
+  var h='';
+  VA_SEC.forEach(function(sec){
+    h+='<div style="font-size:.65rem;font-weight:700;color:var(--teal);text-transform:uppercase;padding:5px 9px;background:var(--teal-lt);border-radius:5px;margin:8px 0 4px;">'+sec.title+'</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:4px;padding:4px 7px;font-size:.59rem;font-weight:700;color:var(--muted);text-transform:uppercase;background:var(--gray1);">'+
+       '<span>Item</span><span style="text-align:center">PASS</span><span style="text-align:center">FAIL</span><span style="text-align:center">N/A</span></div>';
+    sec.items.forEach(function(it){
+      var v=pSt.A[it.id]||'';
+      var bg=it.c?'#fffdf0':'#fff';
+      h+='<div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:4px;align-items:center;padding:5px 7px;border-bottom:1px solid var(--gray1);background:'+bg+';">';
+      h+='<span style="font-size:.71rem;">'+it.t+(it.c?'<span style="font-size:.57rem;background:var(--fail-bg);color:var(--red);border-radius:3px;padding:1px 4px;margin-left:4px;">CRITIQUE</span>':'')+'</span>';
+      ['PASS','FAIL','NA'].forEach(function(opt){
+        var sel=v===opt;
+        var bc=sel?(opt==='PASS'?'var(--pass-border)':opt==='FAIL'?'var(--fail-border)':'var(--pend-border)'):'var(--border)';
+        var bg2=sel?(opt==='PASS'?'var(--pass-bg)':opt==='FAIL'?'var(--fail-bg)':'var(--pend-bg)'):'var(--gray1)';
+        var tc=sel?(opt==='PASS'?'var(--pass-text)':opt==='FAIL'?'var(--fail-text)':'var(--pend-text)'):'var(--muted)';
+        var lbl=opt==='NA'?'N/A':opt;
+        h+='<div style="display:flex;justify-content:center"><button onclick="setVA(\''+it.id+'\',\''+opt+'\')" style="background:'+bg2+';border:1.5px solid '+bc+';border-radius:5px;padding:3px 8px;cursor:pointer;font-size:.63rem;font-weight:700;color:'+tc+';">'+lbl+'</button></div>';
+      });
+      h+='</div>';
+    });
+  });
+  el.innerHTML=h;
+  _updVASynth();
+}
+function setVA(id,val){pSt.A[id]=val;_renderVA();_updDec();}
+function _updVASynth(){
+  var vs=Object.values(pSt.A);
+  var p=vs.filter(function(v){return v==='PASS';}).length;
+  var f=vs.filter(function(v){return v==='FAIL';}).length;
+  var n=vs.filter(function(v){return v==='NA';}).length;
+  var el=document.getElementById('va-synth'); if(el) el.textContent=p+' PASS / '+f+' FAIL / '+n+' N/A';
+  var cf=[];
+  VA_SEC.forEach(function(s){s.items.forEach(function(i){if(i.c&&pSt.A[i.id]==='FAIL')cf.push(i);});});
+  var dec=document.getElementById('va-dec'); if(!dec) return;
+  if(cf.length>0) dec.innerHTML='<span style="color:var(--red);font-weight:700;">ARRET — HORS SERVICE IMMEDIAT (item critique FAIL)</span>';
+  else if(f>0) dec.innerHTML='<span style="color:var(--amber);font-weight:600;">Items FAIL non critiques — Documenter et poursuivre</span>';
+  else if(p>0) dec.innerHTML='<span style="color:var(--green);font-weight:600;">Tous items critiques PASS — Passer au Volet B</span>';
+  else dec.innerHTML='';
+}
+function _renderVB(){
+  var tb=document.getElementById('proc-B'); if(!tb) return;
+  tb.innerHTML=VB_TESTS.map(function(t){
+    return '<tr><td style="font-size:.71rem;">'+t.test+'</td><td style="font-size:.68rem;color:var(--muted);">'+t.cond+'</td>'+
+           '<td style="font-family:\'JetBrains Mono\';font-size:.68rem;font-weight:600;">'+t.lim+'</td>'+
+           '<td><input class="m-input" id="vb-'+t.id+'" type="number" step="any" placeholder="—" oninput="evalVB()" style="width:80px;"></td>'+
+           '<td id="vb-'+t.id+'-rb"><span class="mb-nd">—</span></td></tr>';
+  }).join('');
+}
+function evalVB(){
+  var anyF=false,anyFil=false;
+  VB_TESTS.forEach(function(t){
+    var el=document.getElementById('vb-'+t.id),rb=document.getElementById('vb-'+t.id+'-rb');
+    if(!el||!rb)return;
+    if(!el.value){rb.innerHTML='<span class="mb-nd">—</span>';return;}
+    anyFil=true;
+    var ok=t.chk(parseFloat(el.value)); if(!ok)anyF=true;
+    rb.innerHTML=ok?'<span class="mb-pass">PASS</span>':'<span class="mb-fail">FAIL</span>';
+    pSt.B[t.id]={ok:ok};
+  });
+  var s=document.getElementById('vb-synth');
+  if(s&&anyFil)s.innerHTML='<div style="padding:7px 10px;border-radius:6px;background:'+(anyF?'var(--fail-bg)':'var(--pass-bg)')+';border:1px solid '+(anyF?'var(--fail-border)':'var(--pass-border)')+'"><strong style="color:'+(anyF?'var(--fail-text)':'var(--pass-text)')+';">Volet B : '+(anyF?'FAIL':'PASS')+'</strong></div>';
+  _updDec();
+}
+function _renderVC(){
+  var el=document.getElementById('proc-C'); if(!el) return;
+  el.innerHTML=VC_GROUPS.map(function(g){
+    return '<div style="margin-bottom:8px;"><div style="font-size:.61rem;font-weight:700;color:var(--navy3);text-transform:uppercase;padding:4px 8px;background:#eaf0f8;border-radius:4px;margin-bottom:4px;">'+g.title+'</div>'+
+    '<table class="mtbl"><thead><tr><th>Parametre</th><th>Consigne</th><th>Tolerance</th><th>Mesure</th><th>Resultat</th></tr></thead><tbody>'+
+    g.tests.map(function(t){
+      return '<tr><td style="font-size:.71rem;">'+t.p+'</td><td style="font-family:\'JetBrains Mono\';font-size:.68rem;">'+t.cons+'</td>'+
+             '<td style="font-size:.67rem;color:var(--muted);">'+t.tol+'</td>'+
+             '<td><input class="m-input" id="vc-'+t.id+'" type="number" step="any" placeholder="—" oninput="evalVC()" style="width:78px;"></td>'+
+             '<td id="vc-'+t.id+'-rb"><span class="mb-nd">—</span></td></tr>';
+    }).join('')+'</tbody></table></div>';
+  }).join('');
+}
+function evalVC(){
+  var anyF=false,anyFil=false;
+  VC_GROUPS.forEach(function(g){g.tests.forEach(function(t){
+    var el=document.getElementById('vc-'+t.id),rb=document.getElementById('vc-'+t.id+'-rb');
+    if(!el||!rb)return;
+    if(!el.value){rb.innerHTML='<span class="mb-nd">—</span>';return;}
+    anyFil=true;
+    var ok=t.chk(parseFloat(el.value)); if(!ok)anyF=true;
+    rb.innerHTML=ok?'<span class="mb-pass">PASS</span>':'<span class="mb-fail">FAIL</span>';
+    pSt.C[t.id]={ok:ok};
+  });});
+  var s=document.getElementById('vc-synth');
+  if(s&&anyFil)s.innerHTML='<div style="padding:7px 10px;border-radius:6px;background:'+(anyF?'var(--fail-bg)':'var(--pass-bg)')+';border:1px solid '+(anyF?'var(--fail-border)':'var(--pass-border)')+'"><strong style="color:'+(anyF?'var(--fail-text)':'var(--pass-text)')+';">Volet C : '+(anyF?'FAIL':'PASS')+'</strong></div>';
+  _updDec();
+}
+function _getRes(){
+  var cf=[];VA_SEC.forEach(function(s){s.items.forEach(function(i){if(i.c&&pSt.A[i.id]==='FAIL')cf.push(i);});});
+  var vA=cf.length>0?'FAIL':(Object.values(pSt.A).indexOf('FAIL')>=0?'WARNING':(Object.values(pSt.A).length>0?'PASS':null));
+  var bv=Object.values(pSt.B); var vB=bv.length===0?null:(bv.some(function(x){return !x.ok;})?'FAIL':'PASS');
+  var cv=Object.values(pSt.C); var vC=cv.length===0?null:(cv.some(function(x){return !x.ok;})?'FAIL':'PASS');
+  var all=[vA,vB,vC].filter(function(x){return x!==null;});
+  var g=all.length===0?null:(all.indexOf('FAIL')>=0?'FAIL':(all.indexOf('WARNING')>=0?'WARNING':'PASS'));
+  return {vA:vA,vB:vB,vC:vC,global:g};
+}
+function _updDec(){
+  var r=_getRes();
+  var gc={PASS:'var(--pass-text)',WARNING:'var(--warn-text)',FAIL:'var(--fail-text)'};
+  var bgc={PASS:'var(--pass-bg)',WARNING:'var(--warn-bg)',FAIL:'var(--fail-bg)'};
+  var bc={PASS:'var(--pass-border)',WARNING:'var(--warn-border)',FAIL:'var(--fail-border)'};
+  [['dec-A',r.vA],['dec-B',r.vB],['dec-C',r.vC]].forEach(function(x){
+    var el=document.getElementById(x[0]); if(!el)return;
+    el.style.color=x[1]?gc[x[1]]:'var(--muted)'; el.textContent=x[1]||'—';
+  });
+  var fd=document.getElementById('dec-final'); if(!fd)return;
+  if(r.global){
+    var lbl={PASS:'REMIS EN SERVICE',WARNING:'SURVEILLANCE RENFORCEE',FAIL:'HORS SERVICE IMMEDIAT'};
+    fd.style.background=bgc[r.global]; fd.style.borderColor=bc[r.global]; fd.style.color=gc[r.global];
+    fd.textContent='DECISION FINALE : '+lbl[r.global];
+  } else {
+    fd.style.background=''; fd.style.borderColor='var(--border)'; fd.style.color='var(--muted)';
+    fd.textContent='Remplissez les volets pour obtenir la decision finale';
+  }
+}
+function resetProc(){
+  Object.keys(pSt.A).forEach(function(k){delete pSt.A[k];});
+  Object.keys(pSt.B).forEach(function(k){delete pSt.B[k];});
+  Object.keys(pSt.C).forEach(function(k){delete pSt.C[k];});
+  _renderVA(); _renderVB(); _renderVC(); _updDec(); toast('Procedure reinitialisee');
+}
+function saveProc(){
+  var r=_getRes(); if(!r.global){toast('Aucune donnee saisie');return;}
+  var sva=document.getElementById('s-va'); if(sva)sva.value=r.vA||'PASS';
+  var svb=document.getElementById('s-vb'); if(svb)svb.value=r.vB||'PASS';
+  var svc=document.getElementById('s-vc'); if(svc)svc.value=r.vC||'PASS';
+  toast('Resultats transferes vers Saisie CQ !');
+  setTimeout(function(){go('saisie');},800);
+}
+
+
+// =========================================================
+// ROLES ET ACCÈS
+// =========================================================
+// Définition des accès par rôle :
+// ingenieur   → tout
+// technicien  → dash, parc, proc, saisie, prep, plan, hist
+// responsable → dash, parc, hist, rpt, plan, nc
+// direction   → dash, rpt uniquement
+// fournisseur → dash, brands (sa marque uniquement)
+
+var ACCESS_RULES = {
+  // Par identifiant (comptes de démo)
+  ingenieur:   ['dash','parc','proc','saisie','prep','nc','brands','plan','hist','rpt'],
+  technicien:  ['dash','parc','proc','saisie','prep','plan','hist'],
+  responsable: ['dash','parc','hist','rpt','plan','nc'],
+  direction:   ['dash','rpt'],
+  fournisseur: ['dash','brands'],
+  '3medical':  ['dash','brands'],
+  'scrim':     ['dash','brands'],
+  // Par niveau d'accès (nouveaux comptes)
+  'all':  ['dash','parc','proc','saisie','prep','nc','brands','plan','hist','rpt'],
+  'tech': ['dash','parc','proc','saisie','prep','plan','hist'],
+  'resp': ['dash','parc','hist','rpt','plan','nc'],
+  'dir':  ['dash','rpt'],
+  'dist': ['dash','brands'],
+  'Distributeur / Fournisseur': ['dash','brands']
+};
+
+// Marque commercialisée par chaque fournisseur
+var DIST_BRAND = {
+  '3medical': 'airliquide',  // 3Medical — Air Liquide Medical Systems (MONNAL TEO)
+  'scrim':    'mindray',     // SCRIM — Mindray (SV800, SV600...)
+  // Les nouveaux comptes distributeurs sont ajoutés dynamiquement à la connexion
+};
+
+function applyRoleUI() {
+  if (!currentUser) return;
+  // Priorité 1 : champ 'access' stocké dans l'objet user ('all','tech','resp','dir','dist')
+  // Priorité 2 : ACCESS_RULES par identifiant (comptes de démo)
+  // Priorité 3 : technicien par défaut
+  var accessKey = currentUser.access || currentUser.u;
+  var access = ACCESS_RULES[accessKey] || ACCESS_RULES[currentUser.u] || ACCESS_RULES['tech'];
+
+  // Sidebar items : griser ceux non autorisés
+  document.querySelectorAll('.sb-item').forEach(function(item) {
+    var onclick = item.getAttribute('onclick') || '';
+    var match = onclick.match(/go\('([^']+)'\)/);
+    if (!match) return;
+    var page = match[1];
+    if (access.indexOf(page) === -1) {
+      item.style.opacity = '0.25';
+      item.style.pointerEvents = 'none';
+      item.title = 'Accès non autorisé pour votre profil';
+    } else {
+      item.style.opacity = '1';
+      item.style.pointerEvents = 'auto';
+      item.title = '';
+    }
+  });
+
+  // Afficher badge rôle dans la sidebar footer
+  var foot = document.querySelector('.sb-footer');
+  if (foot) {
+    foot.innerHTML = 'IEC 62353 · ISO 80601-2-12<br><span style="color:rgba(255,255,255,.5);font-size:.65rem;">' +
+      currentUser.name + '</span><br>' +
+      '<span style="color:rgba(255,255,255,.35);font-size:.6rem;">' + currentUser.role + '</span>';
+  }
+}
+
+// Patch go() pour bloquer les accès non autorisés
+var _origGo = go;
+go = function(id) {
+  if (currentUser) {
+    var _accessKey = currentUser.access || currentUser.u;
+    var access = ACCESS_RULES[_accessKey] || ACCESS_RULES[currentUser.u] || [];
+    if (access.indexOf(id) === -1) {
+      toast('Accès non autorisé pour votre profil.');
+      return;
+    }
+    // Distributeur → filtrer sur sa marque dans brands
+    var isDistUser = currentUser.brand || (currentUser.role && currentUser.role.indexOf('Distributeur') !== -1);
+    if (id === 'brands' && isDistUser) {
+      _origGo(id);
+      filterBrandsForDist();
+      return;
+    }
+  }
+  _origGo(id);
+};
+
+function filterBrandsForDist() {
+  // Priorité : brandId dans l'objet user, sinon DIST_BRAND dict
+  var brandId = currentUser.brandId || currentUser.brand || DIST_BRAND[currentUser.u];
+  if (!brandId) return;
+  var grid = document.getElementById('brands-grid');
+  if (!grid) return;
+  // Masquer toutes les cartes sauf la sienne
+  setTimeout(function() {
+    var cards = grid.querySelectorAll('.brand-card');
+    cards.forEach(function(card) {
+      var title = card.querySelector('.brand-name');
+      if (!title) return;
+      var brand = BRANDS.find(function(b) { return b.id === brandId; });
+      if (brand && title.textContent.indexOf(brand.name) === -1) {
+        card.style.display = 'none';
+      } else {
+        card.style.display = 'block';
+      }
+    });
+    // Message
+    var msg = document.getElementById('dist-brand-msg');
+    if (!msg) {
+      var brand = BRANDS.find(function(b) { return b.id === brandId; });
+      var div = document.createElement('div');
+      div.id = 'dist-brand-msg';
+      div.style.cssText = 'background:var(--teal-lt);border:1px solid #a8ddd9;border-radius:8px;padding:10px 14px;font-size:.76rem;color:var(--teal);margin-bottom:14px;';
+      div.innerHTML = '<strong>Accès distributeur — ' + currentUser.etab + '</strong><br>Vous visualisez uniquement la fiche technique <strong>' +
+        (brand ? brand.name : brandId) + '</strong>, marque que vous commercialisez. Cette restriction garantit la confidentialité des données inter-sociétés.';
+      if (grid.parentNode) grid.parentNode.insertBefore(div, grid);
+    }
+  }, 200);
+}
+
+// Patch doLogin pour appliquer les rôles après connexion
+var _origDoLogin_role = doLogin;
+doLogin = function() {
+  _origDoLogin_role();
+  if (currentUser) {
+    setTimeout(applyRoleUI, 150);
+    startNotifications();
+  }
+};
+
+// =========================================================
+// NOTIFICATIONS — FAIL CQ + RAPPEL ÉCHÉANCE
+// =========================================================
+var _notifInterval = null;
+
+function startNotifications() {
+  // Demander permission notifications navigateur
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  // Vérifier immédiatement puis toutes les heures
+  checkNotifications();
+  clearInterval(_notifInterval);
+  _notifInterval = setInterval(checkNotifications, 3600000);
+}
+
+function checkNotifications() {
+  if (!currentUser) return;
+  var notifs = [];
+  var today = new Date();
+
+  // 1. Équipements FAIL → alerte critique
+  EQUIP.forEach(function(e) {
+    if (e.status === 'FAIL') {
+      notifs.push({
+        type: 'fail',
+        title: '⛔ FAIL détecté — ' + e.name,
+        body: e.name + ' (' + e.marque + ' ' + e.modele + ') a un résultat non conforme. Mise hors service requise.',
+        urgency: 'high'
+      });
+    }
+  });
+
+  // 2. Équipements dont le CQ est dans ≤ 2 jours
+  EQUIP.forEach(function(e) {
+    if (!e.nextCQ) return;
+    var next = new Date(e.nextCQ);
+    var diff = Math.round((next - today) / 86400000);
+    if (diff >= 0 && diff <= 2) {
+      notifs.push({
+        type: 'reminder',
+        title: '⏰ CQ à planifier — ' + e.name,
+        body: 'Le contrôle qualité de ' + e.name + ' est prévu dans ' + diff + ' jour(s) (le ' + fmtDate(e.nextCQ) + ').',
+        urgency: 'normal'
+      });
+    }
+    if (diff < 0) {
+      notifs.push({
+        type: 'overdue',
+        title: '🚨 CQ en retard — ' + e.name,
+        body: 'Le CQ de ' + e.name + ' aurait dû être réalisé il y a ' + Math.abs(diff) + ' jour(s).',
+        urgency: 'high'
+      });
+    }
+  });
+
+  // Mettre à jour le badge et panneau de notifications
+  updateNotifBadge(notifs);
+
+  // Envoyer notifications navigateur si permission accordée
+  if ('Notification' in window && Notification.permission === 'granted') {
+    notifs.forEach(function(n, i) {
+      if (n.urgency === 'high') {
+        setTimeout(function() {
+          new Notification(n.title, { body: n.body, icon: '' });
+        }, i * 800);
+      }
+    });
+  }
+
+  return notifs;
+}
+
+function updateNotifBadge(notifs) {
+  var badge = document.getElementById('notif-badge');
+  var panel = document.getElementById('notif-panel-list');
+  if (!notifs) notifs = checkNotifications() || [];
+
+  if (badge) {
+    badge.textContent = notifs.length;
+    badge.style.display = notifs.length > 0 ? 'flex' : 'none';
+  }
+
+  if (panel) {
+    if (notifs.length === 0) {
+      panel.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.8rem;">Aucune notification active ✓</div>';
+    } else {
+      panel.innerHTML = notifs.map(function(n) {
+        var c = n.type === 'fail' ? '#c0392b' : n.type === 'overdue' ? '#c97a1a' : '#0d7e77';
+        var bg = n.type === 'fail' ? 'var(--fail-bg)' : n.type === 'overdue' ? 'var(--warn-bg)' : 'var(--teal-lt)';
+        return '<div style="padding:10px 14px;border-bottom:1px solid var(--border);border-left:3px solid '+c+';background:'+bg+';">' +
+          '<div style="font-size:.78rem;font-weight:700;color:'+c+';">'+n.title+'</div>' +
+          '<div style="font-size:.71rem;color:var(--text2);margin-top:3px;line-height:1.5;">'+n.body+'</div>' +
+          '</div>';
+      }).join('');
+    }
+  }
+}
+
+function toggleNotifPanel() {
+  var panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  var isOpen = panel.style.display === 'block';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    var notifs = checkNotifications();
+    updateNotifBadge(notifs);
+  }
+}
+
+// Fermer panel si clic ailleurs
+document.addEventListener('click', function(e) {
+  var panel = document.getElementById('notif-panel');
+  var btn = document.getElementById('notif-btn');
+  if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+    panel.style.display = 'none';
+  }
+});
+
+
+// =========================================================
+// SUPABASE — BASE DE DONNÉES EN TEMPS RÉEL
+// =========================================================
+const SUPABASE_URL = "https://jmnlrcneauylogzegafl.supabase.co";
+const SUPABASE_REST = "https://jmnlrcneauylogzegafl.supabase.co/rest/v1";
+const SUPABASE_KEY = "sb_publishable_10j0nWwYQxeqIr3DJdPR5A_aKTGPyxQ";
+
+var supabaseClient = null;
+var dbReady = false;
+
+try {
+  // Test connexion avec fetch direct (compatible nouveau format clé Supabase)
+  dbReady = true;
+  console.log('Supabase configuré ✓');
+} catch(e) {
+  console.warn('Supabase non disponible:', e.message);
+  dbReady = false;
+}
+
+// Headers pour toutes les requêtes Supabase
+function getHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Prefer': 'return=representation',
+    'X-Client-Info': 'bioventil-manager'
+  };
+}
+
+// Comptes de démo — ne jamais sauvegarder en base
+var DEMO_ACCS = ['ingenieur','technicien','responsable','direction','3medical','scrim'];
+
+function isDemo() {
+  return !currentUser || DEMO_ACCS.indexOf(currentUser.u) !== -1;
+}
+
+// ── SAUVEGARDER ──
+async function saveData() {
+  if (isDemo()) return;
+  var key = currentUser.u;
+  var data = {
+    id: key,
+    nom: currentUser.name,
+    role: currentUser.role,
+    etab: currentUser.etab || '',
+    equip: EQUIP,
+    cq: CQ,
+    nc: NC,
+    updated_at: new Date().toISOString()
+  };
+
+  if (dbReady) {
+    try {
+      var resp = await fetch(SUPABASE_REST + '/etablissements', {
+        method: 'POST',
+        headers: Object.assign({}, getHeaders(), {'Prefer': 'resolution=merge-duplicates,return=representation'}),
+        body: JSON.stringify(data)
+      });
+      if (resp.ok) {
+        console.log('Sauvegardé sur Supabase ✓');
+        return;
+      } else {
+        var errText = await resp.text();
+        console.error('Supabase save HTTP error:', resp.status, errText);
+        throw new Error('HTTP ' + resp.status + ': ' + errText);
+      }
+    } catch(e) {
+      console.warn('Supabase save failed, fallback localStorage:', e.message);
+    }
+  }
+  // Fallback localStorage
+  try { localStorage.setItem('bvm_' + key, JSON.stringify(data)); } catch(e) {}
+}
+
+// ── CHARGER ──
+async function loadData(userKey) {
+  // Comptes démo → données de démo
+  if (DEMO_ACCS.indexOf(userKey) !== -1) {
+    EQUIP.length = 0; DEMO_EQUIP.forEach(function(e){ EQUIP.push(JSON.parse(JSON.stringify(e))); });
+    CQ.length    = 0; DEMO_CQ.forEach(function(c){ CQ.push(JSON.parse(JSON.stringify(c))); });
+    NC.length    = 0; DEMO_NC.forEach(function(n){ NC.push(JSON.parse(JSON.stringify(n))); });
+    return;
+  }
+
+  EQUIP.length = 0; CQ.length = 0; NC.length = 0;
+  var loaded = false;
+
+  if (dbReady) {
+    try {
+      var resp = await fetch(SUPABASE_REST + '/etablissements?id=eq.' + encodeURIComponent(userKey) + '&select=*', {
+        method: 'GET',
+        headers: getHeaders()
+      });
+      if (resp.ok) {
+        var rows = await resp.json();
+        if (rows && rows.length > 0) {
+          var d = rows[0];
+          (d.equip||[]).forEach(function(e){ EQUIP.push(e); });
+          (d.cq||[]).forEach(function(c){ CQ.push(c); });
+          (d.nc||[]).forEach(function(n){ NC.push(n); });
+          loaded = true;
+          console.log('Données chargées depuis Supabase ✓', rows.length, 'enregistrement(s)');
+        }
+      } else {
+        throw new Error('HTTP ' + resp.status);
+      }
+    } catch(e) {
+      console.warn('Supabase load failed:', e.message);
+    }
+  }
+
+  if (!loaded) {
+    try {
+      var saved = JSON.parse(localStorage.getItem('bvm_' + userKey));
+      if (saved) {
+        (saved.equip||[]).forEach(function(e){ EQUIP.push(e); });
+        (saved.cq||[]).forEach(function(c){ CQ.push(c); });
+        (saved.nc||[]).forEach(function(n){ NC.push(n); });
+        console.log('Données chargées depuis localStorage ✓');
+      }
+    } catch(e) {}
+  }
+}
+
+// ── TOAST avec confirmation sauvegarde ──
+function saveAndToast(msg) {
+  toast(msg);
+  saveData().then(function() {
+    setTimeout(function(){ toast(msg + ' ✓ Sauvegardé'); }, 600);
+  }).catch(function() {
+    setTimeout(function(){ toast(msg + ' (sauvegarde locale)'); }, 600);
+  });
+}
+
+// ── Bannière état connexion DB ──
+function showFirebaseBanner() {
+  var banner = document.getElementById('firebase-banner');
+  if (!banner) return;
+  if (!dbReady) {
+    banner.style.display = 'flex';
+    banner.querySelector('strong').textContent = '⚠ Mode hors-ligne — données sauvegardées localement uniquement';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+function hideFirebaseBanner() {
+  var banner = document.getElementById('firebase-banner');
+  if (banner) banner.style.display = 'none';
+}
+function hideFirebaseBanner() {
+  var banner = document.getElementById('firebase-banner');
+  if (banner) banner.style.display = 'none';
+}
+
+
+// ── TEST SUPABASE (appeler depuis la console navigateur) ──
+async function testSupabase() {
+  console.log('Test Supabase...');
+  console.log('URL:', SUPABASE_REST);
+  console.log('KEY:', SUPABASE_KEY.substring(0,20) + '...');
+  try {
+    var resp = await fetch(SUPABASE_REST + '/etablissements?select=*', {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    console.log('Status:', resp.status, resp.statusText);
+    var data = await resp.text();
+    console.log('Response:', data);
+    if (resp.ok) {
+      toast('Supabase OK ✓ — ' + resp.status);
+    } else {
+      toast('Supabase erreur: ' + resp.status);
+    }
+  } catch(e) {
+    console.error('Supabase test failed:', e);
+    toast('Erreur: ' + e.message);
+  }
+}
+window.testSupabase = testSupabase;
+
+</script>
+</div><!-- /app-wrapper -->
+
+<div class="overlay" id="m-register" style="z-index:99999;">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hd"><span class="modal-title">Creer un compte</span><button class="modal-x" onclick="closeM('m-register')">x</button></div>
+    <div class="info-box ib-navy" style="margin-bottom:12px;font-size:.73rem;">Chaque etablissement peut creer ses propres comptes. Le parc sera vide au depart.</div>
+    <div id="reg-err" style="display:none;background:var(--fail-bg);border:1px solid var(--fail-border);border-radius:6px;padding:7px 11px;font-size:.73rem;color:var(--red);margin-bottom:10px;"></div>
+    <div class="fgrid">
+      <div class="fgroup"><label>Nom complet *</label><input id="reg-name" type="text" placeholder="Prenom NOM"></div>
+      <div class="fgroup"><label>Etablissement *</label><input id="reg-etab" type="text" placeholder="CHU, Clinique..."></div>
+      <div class="fgroup full"><label>Fonction</label>
+        <select id="reg-role" onchange="toggleDistFields()">
+          <option value="Ingenieur biomedical">Ingénieur biomédical (hôpital / clinique)</option>
+          <option value="Technicien biomedical">Technicien biomédical (hôpital / clinique)</option>
+          <option value="Responsable service biomedical">Responsable service biomédical</option>
+          <option value="Direction etablissement">Direction établissement</option>
+          <option value="Distributeur / Fournisseur">Distributeur / Fournisseur de respirateurs</option>
+        </select>
+      </div>
+      <div id="dist-fields" style="display:none;grid-column:1/-1;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:2px;">
+          <div class="fgroup"><label>Nom de votre société *</label><input id="reg-societe" type="text" placeholder="SCRIM, 3Medical, Medilab..."></div>
+          <div class="fgroup"><label>Marque commercialisée *</label>
+            <select id="reg-brand">
+              <option value="">-- Sélectionner une marque --</option>
+              <option value="drager">Dräger (Evita 800, V800...)</option>
+              <option value="hamilton">Hamilton Medical (G5, C6, T1...)</option>
+              <option value="pb">Puritan Bennett / Medtronic (PB 980...)</option>
+              <option value="getinge">Getinge / Maquet (Servo-i, Servo-u...)</option>
+              <option value="mindray">Mindray (SV800, SV600, SV300...)</option>
+              <option value="ge">GE Healthcare (Carestation 750...)</option>
+              <option value="zoll">Zoll Medical (Z Vent...)</option>
+              <option value="airliquide">Air Liquide Medical Systems (MONNAL TEO...)</option>
+              <option value="lowenstein">Löwenstein Medical (Leoni plus...)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="fgroup"><label>Identifiant *</label><input id="reg-user" type="text" placeholder="prenom.nom"></div>
+      <div class="fgroup"><label>Mot de passe * (min 6)</label><input id="reg-pass" type="password" placeholder="........"></div>
+      <div class="fgroup full"><label>Confirmer mot de passe *</label><input id="reg-pass2" type="password" placeholder="........"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+      <button class="btn btn-outline" onclick="closeRegister()">Annuler</button>
+      <button class="btn btn-primary" onclick="doRegister()">Creer mon compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bannière configuration Firebase -->
+<div id="firebase-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1e3a5f;color:#fff;padding:12px 20px;z-index:9998;align-items:center;justify-content:space-between;gap:12px;font-size:.78rem;">
+  <div>
+    <strong>⚠ Mode hors-ligne</strong> — Les données sont sauvegardées localement uniquement (ce navigateur). Vérifiez votre connexion internet.
+  </div>
+  <button onclick="hideFirebaseBanner()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:'Syne';font-size:.75rem;flex-shrink:0;">Compris</button>
+</div>
+</body>
+</html>
