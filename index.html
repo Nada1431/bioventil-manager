@@ -5,6 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BioVentil Manager — Gestion cycle de vie qualité respirateurs</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+(function(){
+  emailjs.init({publicKey: "-wrSP0U5QAu3LYbmS"});
+})();
+const EJS_SERVICE = "service_zz64v01";
+const EJS_TEMPLATE = "template_hoa8ort";
+
+function sendNotifEmail(to_email, subject, message, equipment, etab) {
+  if (!to_email) return;
+  emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
+    to_email: to_email,
+    subject: subject,
+    message: message,
+    equipment: equipment || "—",
+    etab: etab || "—",
+    date: new Date().toLocaleDateString('fr-FR')
+  }).then(function() {
+    console.log('Email notification envoyé à ' + to_email);
+  }, function(err) {
+    console.warn('Email notification échoué:', err);
+  });
+}
+
+// Vérification quotidienne des échéances CQ (appelée au login)
+function checkCQEcheances(user, equips) {
+  if (!user || !user.email) return;
+  var today = new Date();
+  today.setHours(0,0,0,0);
+  equips.forEach(function(eq) {
+    if (!eq.nextCQ) return;
+    var next = new Date(eq.nextCQ);
+    next.setHours(0,0,0,0);
+    var diffDays = Math.round((next - today) / (1000*60*60*24));
+    if (diffDays === 2) {
+      sendNotifEmail(
+        user.email,
+        "⏰ Rappel CQ dans 2 jours — " + eq.name,
+        "Le contrôle qualité de l'équipement " + eq.name + " (N° série : " + (eq.sn||'—') + ") est prévu dans 2 jours, le " + next.toLocaleDateString('fr-FR') + ".\n\nVeuillez préparer l'intervention selon la procédure CQ-RESPI-001.",
+        eq.name + " — " + (eq.marque||'') + " " + (eq.modele||''),
+        user.etab
+      );
+    }
+  });
+}
+</script>
 <style>
 /* ═══════════════════════════════════════════
    DESIGN SYSTEM — BioVentil Manager
@@ -258,7 +304,7 @@ textarea{resize:vertical;min-height:70px;}
 .cal-d.ev-late::after{background:var(--red);}
 
 /* ── KPI ROW ── */
-.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}@media(min-width:700px){.kpi-row{grid-template-columns:repeat(6,1fr);}}
 .kpi{background:#fff;border:1px solid var(--border);border-radius:9px;padding:14px;text-align:center;}
 .kpi-val{font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono';color:var(--teal);}
 .kpi-lbl{font-size:.63rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.06em;}
@@ -427,7 +473,20 @@ textarea{resize:vertical;min-height:70px;}
       Procédure CQ
     </div>
   </nav>
-  <div class="sb-footer">IEC 62353 · ISO 80601-2-12<br>Complément OneQA + GMAO</div>
+  <div class="sb-footer">IEC 62353 · ISO 80601-2-12<br>Complément OneQA + GMAO<br><br>
+    <span style="color:rgba(255,255,255,.4);font-size:.58rem;line-height:1.6;">
+      📊 <b style="color:rgba(255,255,255,.6);">Tableau de bord</b> — Vue globale du parc<br>
+      🔧 <b style="color:rgba(255,255,255,.6);">Parc équipements</b> — Liste de tous les respirateurs<br>
+      📋 <b style="color:rgba(255,255,255,.6);">Préparation pré-CQ</b> — Fiche avant intervention<br>
+      ⚠ <b style="color:rgba(255,255,255,.6);">Non-conformités</b> — Suivi des appareils FAIL<br>
+      🔍 <b style="color:rgba(255,255,255,.6);">Base inter-marques</b> — Infos techniques par marque<br>
+      📅 <b style="color:rgba(255,255,255,.6);">Planification CQ</b> — Calendrier des contrôles<br>
+      🕐 <b style="color:rgba(255,255,255,.6);">Historique</b> — Tous les CQ réalisés<br>
+      📈 <b style="color:rgba(255,255,255,.6);">Rapports & KPIs</b> — Statistiques et exports<br>
+      ➕ <b style="color:rgba(255,255,255,.6);">Saisir résultat CQ</b> — Enregistrer un nouveau CQ<br>
+      📝 <b style="color:rgba(255,255,255,.6);">Procédure CQ</b> — Guide CQ-RESPI-001 interactif
+    </span>
+  </div>
 </aside>
 <div id="mob-overlay" onclick="closeMob()"></div>
 
@@ -616,8 +675,35 @@ textarea{resize:vertical;min-height:70px;}
       </div>
       <div>
         <div class="card" style="margin-bottom:16px;">
-          <div class="card-h"><span class="card-title">Échéances — tous équipements</span></div>
-          <table><thead><tr><th>Équipement</th><th>Service</th><th>Prochain CQ</th><th>Délai</th><th>Statut</th></tr></thead>
+          <div class="card-h"><span class="card-title">Planifier un nouveau CQ</span></div>
+          <div class="card-body">
+            <div class="fgrid">
+              <div class="fgroup"><label>Équipement *</label><select id="plan-equip"></select></div>
+              <div class="fgroup"><label>Date prévue *</label><input type="date" id="plan-date"></div>
+              <div class="fgroup"><label>Technicien assigné</label><input type="text" id="plan-tech" placeholder="Nom Prénom"></div>
+              <div class="fgroup"><label>Rappel email (2j avant)</label>
+                <select id="plan-rappel">
+                  <option value="1">Oui — email automatique 2 jours avant</option>
+                  <option value="0">Non</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:8px;" onclick="planifierCQ()">📅 Enregistrer la planification</button>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-h"><span class="card-title">Échéances — tous équipements</span>
+            <select id="plan-filter" onchange="renderPlanTable()" style="font-size:.72rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text1);cursor:pointer;">
+              <option value="">Toutes les marques</option>
+              <option value="Dräger">Dräger</option>
+              <option value="Hamilton Medical">Hamilton Medical</option>
+              <option value="Mindray">Mindray</option>
+              <option value="Heyer Medical">Heyer Medical</option>
+              <option value="Aenmed">Aenmed</option>
+              <option value="Löwenstein Medical">Löwenstein Medical</option>
+            </select>
+          </div>
+          <table><thead><tr><th>Équipement</th><th>Marque</th><th>Service</th><th>Prochain CQ</th><th>Délai</th><th>Statut</th></tr></thead>
           <tbody id="plan-body"></tbody></table>
         </div>
         <div class="card">
@@ -734,7 +820,7 @@ textarea{resize:vertical;min-height:70px;}
       <strong>⚠ Avertissements généraux :</strong> Ne jamais réaliser ce contrôle sur un respirateur connecté à un patient. Tout résultat FAIL entraîne la mise hors service immédiate. Débrancher des prises de gaz médicaux avant l'inspection. · Classe IIb · IEC 62353:2014 / ISO 80601-2-12:2023
     </div>
     <div class="info-box ib-amber" style="margin-bottom:18px;">
-      <strong>📋 Note d'application :</strong> Cette procédure est universelle et s'applique à tout respirateur adulte de classe IIb indépendamment de la marque. <strong>Tolérances :</strong> les valeurs de ce document sont normatives — les tolérances constructeur priment si elles sont plus strictes (ex: Hamilton ±5% Vt). <strong>Adaptateurs :</strong> Mindray et Löwenstein nécessitent un adaptateur 22→15mm. <strong>Batterie :</strong> désactiver avant ESA715 sur tout appareil équipé d'une batterie interne. <strong>Délai FiO₂ :</strong> 3 à 4 min pour Puritan Bennett, 3 min pour Hamilton. Consulter la fiche inter-marques avant intervention.
+      <strong>📋 Note d'application :</strong> Cette procédure est universelle et s'applique à tout respirateur adulte de classe IIb indépendamment de la marque. <strong>Tolérances :</strong> les valeurs de ce document sont normatives — les tolérances constructeur priment si elles sont plus strictes (ex: Hamilton ±5% Vt). <strong>Adaptateurs :</strong> Mindray et Löwenstein nécessitent un adaptateur 22→15mm. <strong>Batterie :</strong> désactiver avant ESA715 sur tout appareil équipé d'une batterie interne. <strong>Délai FiO₂ :</strong> 3 min pour Aenmed, 3 min pour Hamilton. Consulter la fiche inter-marques avant intervention.
     </div>
 
     <!-- IDENTIFICATION -->
@@ -931,9 +1017,9 @@ textarea{resize:vertical;min-height:70px;}
       <div class="fgroup"><label>N° d'inventaire</label><input id="ae-inv" placeholder="INV-XXXX"></div>
       <div class="fgroup"><label>Marque</label>
         <select id="ae-marque">
-          <option>Dräger</option><option>Hamilton Medical</option><option>Puritan Bennett (Medtronic)</option>
+          <option>Dräger</option><option>Hamilton Medical</option><option>Aenmed</option>
           <option>Getinge (Maquet)</option><option>Mindray</option><option>GE Healthcare</option>
-          <option>Zoll Medical</option><option>Löwenstein Medical</option><option>Autre</option>
+          <option>Heyer Medical</option><option>Löwenstein Medical</option><option>Autre</option>
         </select>
       </div>
       <div class="fgroup"><label>Modèle</label><input id="ae-modele" placeholder="Evita 800, G5, SV800…"></div>
@@ -980,9 +1066,9 @@ textarea{resize:vertical;min-height:70px;}
 const DEMO_EQUIP = [
   {id:1,name:"Respirateur REA-01",sn:"SN-DR-2021-001",inv:"INV-041",marque:"Dräger",modele:"Evita 800",service:"Réanimation adulte",classe:"I",lastCQ:"2026-01-15",status:"PASS",period:6,nextCQ:"2026-07-15"},
   {id:2,name:"Respirateur REA-02",sn:"SN-HM-2020-014",inv:"INV-042",marque:"Hamilton Medical",modele:"G5",service:"Réanimation adulte",classe:"I",lastCQ:"2026-02-03",status:"PASS",period:6,nextCQ:"2026-08-03"},
-  {id:3,name:"Respirateur REA-03",sn:"SN-PB-2019-007",inv:"INV-043",marque:"Puritan Bennett (Medtronic)",modele:"980",service:"Réanimation adulte",classe:"I",lastCQ:"2025-11-20",status:"WARNING",period:6,nextCQ:"2026-05-20"},
+  {id:3,name:"Respirateur REA-03",sn:"SN-PB-2019-007",inv:"INV-043",marque:"Aenmed",modele:"Shangrila 590P",service:"Réanimation adulte",classe:"I",lastCQ:"2025-11-20",status:"WARNING",period:6,nextCQ:"2026-05-20"},
   {id:4,name:"Respirateur BLO-01",sn:"SN-GE-2022-003",inv:"INV-044",marque:"GE Healthcare",modele:"Carestation 750",service:"Bloc opératoire",classe:"I",lastCQ:"2026-03-10",status:"PASS",period:12,nextCQ:"2027-03-10"},
-  {id:5,name:"Respirateur URG-01",sn:"SN-ZO-2018-011",inv:"INV-045",marque:"Zoll Medical",modele:"Z Vent",service:"Urgences",classe:"I",lastCQ:"2025-10-05",status:"FAIL",period:6,nextCQ:"2026-04-05"},
+  {id:5,name:"Respirateur URG-01",sn:"SN-ZO-2018-011",inv:"INV-045",marque:"Heyer Medical",modele:"SB900",service:"Urgences",classe:"I",lastCQ:"2025-10-05",status:"FAIL",period:6,nextCQ:"2026-04-05"},
   {id:6,name:"Respirateur NEO-01",sn:"SN-MR-2023-002",inv:"INV-046",marque:"Mindray",modele:"SV800",service:"Réanimation adulte",classe:"I",lastCQ:"2026-04-01",status:"PASS",period:6,nextCQ:"2026-10-01"},
   {id:7,name:"Respirateur REA-04",sn:"SN-GT-2020-022",inv:"INV-047",marque:"Getinge (Maquet)",modele:"Servo-u",service:"Réanimation adulte",classe:"I",lastCQ:"2026-02-28",status:"PASS",period:6,nextCQ:"2026-08-28"},
   {id:8,name:"Respirateur SMUR-01",sn:"SN-HM-2021-009",inv:"INV-048",marque:"Hamilton Medical",modele:"T1",service:"SMUR",classe:"I",lastCQ:"2026-01-20",status:"WARNING",period:6,nextCQ:"2026-07-20"},
@@ -1075,23 +1161,23 @@ const BRANDS = [
     source:"Hamilton Medical G5/C6 Operator's Manual + Hamilton ASV Technical Documentation + IEC 62353"
   },
   {
-    id:"pb", name:"Puritan Bennett (Medtronic)", color:"#e63900", models:"PB 980, PB 840, PB 560, PB 980S",
-    tol_vt:"±10% (norme ISO)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
-    vt900a_connect:"Raccord 22mm standard — placer filtre bactérien côté entrée VT900A",
-    vt900a_issue:"Filtre expiratoire intégré sur PB 980 : NE PAS déconnecter avant test",
-    battery:"Pas de batterie interne standard (vérifier si option UPS externe installée)",
-    stabilization:"3 à 4 min obligatoire — délai le plus long parmi les respirateurs courants. Attendre stabilisation affichage panneau",
-    modes_standard:"VAC, VPAC, CPAP, VNI, SIMV, Aide Inspiratoire",
-    modes_specific:"SmartCare® (sevrage automatisé par algorithme), PAV+ (ventilation proportionnelle à l'effort patient), PPS",
+    id:"aenmed", name:"Aenmed", color:"#e63900", models:"Shangrila 590P, Shangrila 590M, Shangrila 510 (réanimation adulte)",
+    tol_vt:"±10% (ISO 80601-2-12)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"Raccord 22mm standard — compatible direct avec VT900A. Placer filtre bactérien côté inspiratoire.",
+    vt900a_issue:"Vérifier l'étanchéité du circuit patient avant connexion VT900A. Purge du circuit obligatoire.",
+    battery:"Batterie de secours externe en option — retirer avant ESA715 si présente",
+    stabilization:"3 min recommandées. Attendre stabilisation de la FiO₂ affichée avant mesure.",
+    modes_standard:"VCV (Volume Contrôlé), PCV (Pression Contrôlée), CPAP, SIMV, Aide Inspiratoire, VNI",
+    modes_specific:"PRVC (Volume cible en mode pression), APRV, PLV, MMV (ventilation à volume-minute garanti), monitorage boucles P/V",
     vigilance:[
-      "DÉLAI CRITIQUE : attendre 3 à 4 min après mise en marche avant mesure FiO₂ (le plus long de tous les respirateurs)",
-      "Capteur O₂ galvanique : durée de vie 12 mois — vérifier impérativement la date d'étalonnage avant test FiO₂",
-      "Filtre expiratoire intégré PB 980 : ne jamais déconnecter (fait partie du circuit de mesure)",
-      "SmartCare® : désactiver avant test (ajuste automatiquement le niveau d'aide inspiratoire)",
-      "PB 980 : rappel constructeur en vigueur — vérifier le bulletin de sécurité avant CQ",
-      "Placer filtre HME côté entrée VT900A (côté inspiratoire) pour protéger les capteurs",
+      "Délai FiO₂ : attendre 3 min de stabilisation minimum avant toute mesure FiO₂",
+      "Capteur O₂ galvanique : durée de vie 12 mois — vérifier la date de calibration avant le Volet C",
+      "Mode PRVC : désactiver et passer en VCV pur avant les tests de performance Volet C",
+      "Circuit patient : réaliser la purge complète du circuit avant de connecter le VT900A",
+      "Filtre bactérien : placer obligatoirement côté inspiratoire avant le VT900A",
+      "Vérifier la pression des gaz muraux (O₂ et air médical) : minimum 2.8 bar avant test",
     ],
-    source:"Puritan Bennett 980 Operator's Manual + Medtronic Service Bulletin + IEC 62353"
+    source:"Aenmed Shangrila 590P/590M Operator's Manual + Service Documentation + IEC 62353:2014 + ISO 80601-2-12:2023"
   },
   {
     id:"getinge", name:"Getinge (Maquet)", color:"#005f73", models:"Servo-i, Servo-u, Servo-air, Servo-n (néonatal)",
@@ -1150,22 +1236,23 @@ const BRANDS = [
     source:"GE Healthcare Carestation 750/R860 Service Manual + IEC 62353 + ISO 80601-2-12"
   },
   {
-    id:"zoll", name:"Zoll Medical", color:"#7b2d8b", models:"Z Vent, Eagle II (SMUR)",
-    tol_vt:"±10% (norme ISO)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
-    vt900a_connect:"Raccord 22mm standard — appareil compact, vérifier stabilité du montage VT900A",
-    vt900a_issue:"Gabarit compact SMUR : s'assurer de la stabilité mécanique lors de la connexion",
-    battery:"Batterie haute capacité conçue pour transport — déconnecter OBLIGATOIREMENT avant ESA715",
-    stabilization:"2 min standard",
-    modes_standard:"VAC, VPAC, CPAP uniquement (gamme réduite pour usage SMUR)",
-    modes_specific:"Aucun mode avancé (pas de NAVA, ni ASV, ni SmartCare). Modes SMUR allégés uniquement",
+    id:"heyer", name:"Heyer Medical", color:"#0077b6", models:"SB900, SB800, SB600 (réanimation adulte/pédiatrique)",
+    tol_vt:"±10% (ISO 80601-2-12)", tol_peep:"±1 cmH₂O", tol_fio2:"±3%", tol_fr:"±2 c/min",
+    vt900a_connect:"Raccord 22mm standard — compatible direct avec VT900A",
+    vt900a_issue:"Aucun adaptateur requis. Placer filtre bactérien côté inspiratoire avant VT900A.",
+    battery:"Batterie de secours interne — désactiver dans menu Système avant test ESA715",
+    stabilization:"2 min standard. Attendre la fin de l'autotest avant connexion VT900A.",
+    modes_standard:"VC (Volume Contrôlé), PC (Pression Contrôlée), CPAP, SIMV, Aide Inspiratoire, VNI",
+    modes_specific:"PRVC (Pressure Regulated Volume Control), BIPAP, AutoPEEP detection, courbes temps réel pression/débit/volume",
     vigilance:[
-      "Batterie haute capacité transport : déconnecter OBLIGATOIREMENT avant ESA715 (très haute charge résiduelle)",
-      "Capteur O₂ : durée de vie courte 6 à 9 mois (usage SMUR intensif) — vérifier date de calibration systématiquement",
-      "Environnement SMUR hostile : inspection visuelle renforcée (chocs, humidité, poussière)",
-      "Appareil compact : risque de basculement lors de la connexion VT900A — caler l'appareil avant test",
-      "Connexion gaz O₂ bouteille : vérifier la pression résiduelle dans la bouteille avant le test FiO₂",
+      "Batterie interne : désactiver obligatoirement dans le menu Système avant test ESA715",
+      "Autotest de démarrage : attendre la fin complète avant de connecter le VT900A",
+      "Capteur O₂ électrochimique : durée de vie 12 mois — vérifier la date de calibration",
+      "Circuit patient 22mm standard : vérifier l'étanchéité à la connexion VT900A",
+      "Filtre antibactérien en ligne : placer côté inspiratoire avant VT900A pour protéger les capteurs",
+      "Mode PRVC : désactiver et passer en VC pur avant les tests de performance Volet C",
     ],
-    source:"Zoll Medical Z Vent Operator's Manual + IEC 62353"
+    source:"Heyer Medical SB900 Operator's Manual + Technical Service Documentation + IEC 62353:2014 + ISO 80601-2-12:2023"
   },
   {
     id:"airliquide", name:"Air Liquide Medical Systems", color:"#005f86",
@@ -1653,28 +1740,94 @@ function openBrandDetail(id){
 //  PLANIFICATION
 // ═══════════════════════════════════════════════════════════
 function renderPlan(){
+  // Remplir le select d'équipements
+  const sel=document.getElementById('plan-equip');
+  if(sel && !sel.options.length){
+    EQUIP.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name} — ${e.marque} ${e.modele}</option>`);
+  }
+  // Mettre la date minimum = aujourd'hui
+  const dateInp=document.getElementById('plan-date');
+  if(dateInp) dateInp.min=new Date().toISOString().split('T')[0];
+  renderPlanTable();
+}
+
+function renderPlanTable(){
   const cg=document.getElementById('cal-grid');
-  const days=['L','M','M','J','V','S','D'];
-  cg.innerHTML=days.map(d=>`<div class="cal-dh">${d}</div>`).join('');
-  for(let i=0;i<2;i++) cg.innerHTML+=`<div class="cal-d empty"></div>`;
-  for(let d=1;d<=31;d++){
-    let cls='cal-d';
-    if([15,20].includes(d)) cls+=' has-ev ev-plan';
-    if([22,28].includes(d)) cls+=' has-ev ev-urg';
-    if([5,10].includes(d)) cls+=' has-ev ev-late';
-    cg.innerHTML+=`<div class="${cls}">${d}</div>`;
+  if(cg){
+    const days=['L','M','M','J','V','S','D'];
+    cg.innerHTML=days.map(d=>`<div class="cal-dh">${d}</div>`).join('');
+    for(let i=0;i<2;i++) cg.innerHTML+=`<div class="cal-d empty"></div>`;
+    for(let d=1;d<=31;d++){
+      let cls='cal-d';
+      if([15,20].includes(d)) cls+=' has-ev ev-plan';
+      if([22,28].includes(d)) cls+=' has-ev ev-urg';
+      if([5,10].includes(d)) cls+=' has-ev ev-late';
+      cg.innerHTML+=`<div class="${cls}">${d}</div>`;
+    }
   }
   const pb=document.getElementById('plan-body');
+  const filterEl=document.getElementById('plan-filter');
+  const filterVal=filterEl?filterEl.value:'';
   pb.innerHTML='';
-  [...EQUIP].sort((a,b)=>new Date(a.nextCQ)-new Date(b.nextCQ)).forEach(e=>{
+  let equips=[...EQUIP].sort((a,b)=>new Date(a.nextCQ)-new Date(b.nextCQ));
+  if(filterVal) equips=equips.filter(e=>e.marque===filterVal);
+  if(!equips.length){
+    pb.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px;">Aucun équipement pour cette marque.</td></tr>`;
+    return;
+  }
+  equips.forEach(e=>{
     pb.innerHTML+=`<tr>
       <td class="td-name" style="font-size:.78rem;">${e.name}</td>
+      <td style="font-size:.72rem;color:var(--muted);">${e.marque}</td>
       <td style="font-size:.74rem;">${e.service}</td>
       <td class="td-mono" style="font-size:.7rem;">${fmt(e.nextCQ)}</td>
       <td>${daysTo(e.nextCQ)}</td>
       <td>${badge(e.status)}</td>
     </tr>`;
   });
+}
+
+function planifierCQ(){
+  var equipId=parseInt(document.getElementById('plan-equip').value);
+  var date=document.getElementById('plan-date').value;
+  var tech=document.getElementById('plan-tech').value.trim();
+  var rappel=document.getElementById('plan-rappel').value;
+
+  if(!date){toast('Veuillez sélectionner une date.');return;}
+  var today=new Date(); today.setHours(0,0,0,0);
+  var planDate=new Date(date); planDate.setHours(0,0,0,0);
+  if(planDate<=today){toast('La date doit être dans le futur.');return;}
+
+  // Mettre à jour dans EQUIP
+  var eq=EQUIP.find(function(e){return e.id===equipId;});
+  if(!eq){toast('Équipement introuvable.');return;}
+  eq.nextCQ=date;
+  eq.techAssigne=tech||'—';
+
+  // Mettre à jour aussi dans DEMO_EQUIP si compte démo
+  if(isDemo()){
+    var deq=DEMO_EQUIP.find(function(e){return e.id===equipId;});
+    if(deq){ deq.nextCQ=date; deq.techAssigne=tech||'—'; }
+  }
+
+  // Envoyer email de confirmation
+  var userEmail=(currentUser && currentUser.email)?currentUser.email:null;
+  if(!userEmail){toast('⚠️ Aucun email configuré pour ce compte — notifications désactivées.');return;}
+  sendNotifEmail(
+    userEmail,
+    '📅 CQ planifié — ' + eq.name,
+    'Un contrôle qualité a été planifié pour le ' + planDate.toLocaleDateString('fr-FR') + '.\n\n'
+    + 'Équipement : ' + eq.name + ' (' + eq.marque + ' ' + eq.modele + ')\n'
+    + 'Service : ' + eq.service + '\n'
+    + (tech ? 'Technicien assigné : ' + tech + '\n' : '')
+    + '\nUn email de rappel sera envoyé 2 jours avant la date prévue.',
+    eq.name + ' — ' + eq.marque + ' ' + eq.modele,
+    currentUser ? currentUser.etab : ''
+  );
+
+  toast('✅ CQ planifié le ' + planDate.toLocaleDateString('fr-FR') + ' — Email envoyé !');
+  renderPlanTable();
+  if(!isDemo()) saveData();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1723,14 +1876,21 @@ function renderHist(){
 //  RAPPORTS & KPIs (Module A + D)
 // ═══════════════════════════════════════════════════════════
 function renderRpt(){
-  const tot=EQUIP.length, pass=EQUIP.filter(e=>e.status==='PASS').length;
+  const tot=EQUIP.length;
+  const pass=EQUIP.filter(e=>e.status==='PASS').length;
   const fail=EQUIP.filter(e=>e.status==='FAIL').length;
+  const warn=EQUIP.filter(e=>e.status==='WARNING').length;
   const openNC=NC.filter(n=>n.status==='open').length;
-  const avgDays = Math.round(CQ.reduce((a,c)=>{const eq=EQUIP.find(e=>e.id===c.equipId);return a+(eq?.period*30||180);},0)/CQ.length);
+  const totalCQ=CQ.length;
+  const tauxConf=tot?Math.round(pass/tot*100):0;
+  const col=tauxConf>=80?'var(--green)':tauxConf>=60?'var(--amber)':'var(--red)';
   document.getElementById('kpi-row').innerHTML=`
-    <div class="kpi"><div class="kpi-val">${Math.round(pass/tot*100)}%</div><div class="kpi-lbl">Taux conformité parc</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:${fail>0?'var(--red)':'var(--green)'};">${fail}</div><div class="kpi-lbl">Équipements hors service</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:${openNC>0?'var(--amber)':'var(--green)'};">${openNC}</div><div class="kpi-lbl">NC en cours de traitement</div></div>`;
+    <div class="kpi"><div class="kpi-val" style="color:${col};">${tauxConf}%</div><div class="kpi-lbl">Taux conformité parc</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:${fail>0?'var(--red)':'var(--green)'};">${fail}</div><div class="kpi-lbl">Équipements FAIL</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:${warn>0?'var(--amber)':'var(--green)'};">${warn}</div><div class="kpi-lbl">Équipements WARNING</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--green);">${pass}</div><div class="kpi-lbl">Équipements PASS</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:${openNC>0?'var(--amber)':'var(--green)'};">${openNC}</div><div class="kpi-lbl">NC ouvertes</div></div>
+    <div class="kpi"><div class="kpi-val">${totalCQ}</div><div class="kpi-lbl">CQ réalisés (total)</div></div>`;
   const sel=document.getElementById('rpt-eq');
   if(!sel.options.length){ EQUIP.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name}</option>`); sel.onchange=updateRptCQ; }
   updateRptCQ();
@@ -1816,6 +1976,20 @@ function saveCQ(){
       diagnostic:`${global} détecté au CQ du ${fmt(date)}. Volet A:${vA}, Volet B:${vB}, Volet C:${vC}. ${newCQ.obs}`,
       actions:[{date,action:`Résultat ${global} enregistré. Fiche NC ouverte automatiquement.`,done:true}],resolution:null});
     toast(`${global} enregistré — Fiche de non-conformité NC-${String(NC.length).padStart(3,'0')} ouverte automatiquement !`);
+    // Notification email automatique
+    if(currentUser && currentUser.email) {      var eqObj = EQUIP.find(function(e){return e.id===equipId;});
+      var eqName = eqObj ? (eqObj.name + ' — ' + (eqObj.marque||'') + ' ' + (eqObj.modele||'')) : 'Équipement #'+equipId;
+      var subj = global==='FAIL'
+        ? '🚨 FAIL — Non-conformité détectée : ' + (eqObj?eqObj.name:'')
+        : '⚠️ WARNING — Anomalie détectée : ' + (eqObj?eqObj.name:'');
+      var msg = 'Un résultat ' + global + ' a été enregistré lors du contrôle qualité du ' + fmt(date) + '.\n\n'
+        + 'Volet A (Inspection visuelle) : ' + vA + '\n'
+        + 'Volet B (Sécurité électrique ESA715) : ' + vB + '\n'
+        + 'Volet C (Performance pneumatique VT900A) : ' + vC + '\n\n'
+        + 'Une fiche de non-conformité NC-' + String(NC.length).padStart(3,'0') + ' a été ouverte automatiquement.\n'
+        + 'Opérateur : ' + op;
+      sendNotifEmail(currentUser.email, subj, msg, eqName, currentUser.etab);
+    }
   } else {
     toast('Résultat PASS enregistré avec succès !');
   }
@@ -1873,11 +2047,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 // AUTH — LOGIN / LOGOUT / REGISTER
 // =========================================================
 var USERS = [
-  {u:'ingenieur',   p:'bio2026',  name:'Nada Laouidi',        role:'Ingenieure biomedicale',              etab:'CHU Ibn Sina',           color:'#0d7e77'},
-  {u:'technicien',  p:'tech2026', name:'Karim Amama',          role:'Technicien biomedical',               etab:'CHU Ibn Sina',           color:'#1a7a4a'},
-  {u:'responsable', p:'resp2026', name:'Dr. Salma Idrissi',    role:'Responsable service biomedical',      etab:'CHU Ibn Sina',           color:'#c97a1a'},
-  {u:'direction',   p:'dir2026',  name:'Direction Medicale',   role:'Direction etablissement',             etab:'CHU Ibn Sina',           color:'#003366'},
-  {u:'fournisseur', p:'four2026', name:'3Medical',             role:'Distributeur officiel', etab:'3Medical', color:'#005f86', brand:'airliquide'}
+  {u:'ingenieur',   p:'bio2026',  name:'Nada Laouidi',        role:'Ingenieure biomedicale',              etab:'CHU Ibn Sina', email:'nada.laouidi2002@gmail.com', color:'#0d7e77'},
+  {u:'technicien',  p:'tech2026', name:'Karim Amama',          role:'Technicien biomedical',               etab:'CHU Ibn Sina', email:'nada.laouidi2002@gmail.com', color:'#1a7a4a'},
+  {u:'responsable', p:'resp2026', name:'Dr. Salma Idrissi',    role:'Responsable service biomedical',      etab:'CHU Ibn Sina', email:'nada.laouidi2002@gmail.com', color:'#c97a1a'},
+  {u:'direction',   p:'dir2026',  name:'Direction Medicale',   role:'Direction etablissement',             etab:'CHU Ibn Sina', email:'nada.laouidi2002@gmail.com', color:'#003366'},
+  {u:'fournisseur', p:'four2026', name:'3Medical',             role:'Distributeur officiel', etab:'3Medical', email:'nada.laouidi2002@gmail.com', color:'#005f86', brand:'airliquide'}
 ];
 var currentUser = null;
 
@@ -1922,10 +2096,10 @@ function doLogin() {
 
   // Charger les données via Firebase ou localStorage
   loadData(found.u).then(function() {
-    setTimeout(function() { renderDash(); applyRoleUI(); startNotifications(); }, 100);
+    setTimeout(function() { renderDash(); applyRoleUI(); startNotifications(); checkCQEcheances(currentUser, EQUIP); }, 100);
     showFirebaseBanner();
   }).catch(function() {
-    setTimeout(function() { renderDash(); applyRoleUI(); startNotifications(); }, 100);
+    setTimeout(function() { renderDash(); applyRoleUI(); startNotifications(); checkCQEcheances(currentUser, EQUIP); }, 100);
   });
 }
 
@@ -1960,6 +2134,7 @@ function doRegister() {
   var name = document.getElementById('reg-name').value.trim();
   var etab = document.getElementById('reg-etab').value.trim();
   var role = document.getElementById('reg-role').value;
+  var email= (document.getElementById('reg-email').value||'').trim().toLowerCase();
   var u    = document.getElementById('reg-user').value.trim().toLowerCase();
   var p    = document.getElementById('reg-pass').value;
   var p2   = document.getElementById('reg-pass2').value;
@@ -1976,6 +2151,7 @@ function doRegister() {
   }
 
   if (!name || !etab || !u || !p) { err.textContent='Tous les champs sont obligatoires.'; err.style.display='block'; return; }
+  if (!email || email.indexOf('@')===-1) { err.textContent='Veuillez saisir une adresse email valide.'; err.style.display='block'; return; }
   if (p !== p2)   { err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
   if (p.length < 6){ err.textContent='Mot de passe trop court (6 caractères minimum).'; err.style.display='block'; return; }
   for (var i=0;i<USERS.length;i++) { if(USERS[i].u===u){err.textContent='Identifiant déjà utilisé.';err.style.display='block';return;} }
@@ -1987,6 +2163,7 @@ function doRegister() {
     name: isDist ? (societe||name) : name,
     role: isDist ? ('Distributeur — ' + (societe||etab)) : (role + ' — ' + etab),
     etab: isDist ? (societe||etab) : etab,
+    email: email,
     color: isDist ? '#005f86' : '#2563eb',
     access: accessMap[role] || 'tech',
     brand: isDist ? brand : null,
@@ -2059,46 +2236,46 @@ renderDash = function() { _origRD(); renderCircles(); };
 // =========================================================
 var VA_SEC=[
   {title:"Boitier et interface utilisateur",items:[
-    {id:"a1",t:"Boitier sans choc, fissure, deformation ou trace de liquide",c:true},
-    {id:"a2",t:"Ecran intact, sans fissure ni rayure profonde"},
-    {id:"a3",t:"Commandes physiques presentes et fonctionnelles",c:true},
-    {id:"a4",t:"Barre ou voyant d'alarme lumineux fonctionnel",c:true},
-    {id:"a5",t:"Grilles de ventilation degagees et non obstruees"},
-    {id:"a6",t:"Chariot ou pied mobile stable, freins fonctionnels"},
-    {id:"a7",t:"Ports de communication presents et non endommages"},
+    {id:"a1",t:"Boitier sans choc, fissure, déformation ou trace de liquide — Inspecter visuellement les 4 faces et le dessus. Toute fissure ou trace d'humidité interne = FAIL.",c:true},
+    {id:"a2",t:"Ecran intact, sans fissure ni rayure profonde — Allumer l'appareil et vérifier l'affichage complet. Rayure superficielle = N/A si lisibilité conservée."},
+    {id:"a3",t:"Commandes physiques présentes et fonctionnelles — Tester chaque bouton/molette manuellement. Vérifier que chaque action produit une réponse sur l'écran.",c:true},
+    {id:"a4",t:"Barre ou voyant d'alarme lumineux fonctionnel — Déclencher une alarme de test depuis le menu et vérifier que le voyant s'allume.",c:true},
+    {id:"a5",t:"Grilles de ventilation dégagées et non obstruées — Inspecter visuellement et passer le doigt. Aucun dépôt de poussière ni obstruction."},
+    {id:"a6",t:"Chariot ou pied mobile stable, freins fonctionnels — Appuyer sur le frein et tenter de déplacer le chariot. Vérifier stabilité latérale."},
+    {id:"a7",t:"Ports de communication présents et non endommagés — Vérifier visuellement les ports USB, RJ45, RS232. Aucune broche tordue ni port cassé."},
   ]},
   {title:"Alimentation electrique",items:[
-    {id:"b1",t:"Cordon secteur intact, sans coupure ni trace de brulure",c:true},
-    {id:"b2",t:"Prise secteur propre, broches de terre presentes",c:true},
-    {id:"b3",t:"Batterie de secours presente et chargee"},
-    {id:"b4",t:"Date de remplacement batterie dans les delais"},
-    {id:"b5",t:"Module alimentation secours (si equipe) en bon etat"},
+    {id:"b1",t:"Cordon secteur intact, sans coupure ni trace de brûlure — Dérouler entièrement le câble et inspecter sur toute la longueur. Vérifier les deux extrémités.",c:true},
+    {id:"b2",t:"Prise secteur propre, broches de terre présentes — Inspecter la prise IEC avec une lampe. Vérifier que les 3 broches (phase, neutre, terre) sont présentes et non oxydées.",c:true},
+    {id:"b3",t:"Batterie de secours présente et chargée — Vérifier l'indicateur batterie sur l'écran. Niveau minimum acceptable : 80%."},
+    {id:"b4",t:"Date de remplacement batterie dans les délais — Consulter le carnet de maintenance. Durée de vie standard : 2 ans. Si dépassée = FAIL."},
+    {id:"b5",t:"Module alimentation secours (si équipé) en bon état — Vérifier l'absence de voyant d'erreur sur le module UPS si présent."},
   ]},
   {title:"Circuit patient et connexions pneumatiques",items:[
-    {id:"c1",t:"Connecteur inspiratoire 22mm intact",c:true},
-    {id:"c2",t:"Connecteur expiratoire 22mm intact",c:true},
-    {id:"c3",t:"Valve expiratoire propre, sans depot"},
-    {id:"c4",t:"Filtre bacteriologique present et non perime",c:true},
-    {id:"c5",t:"Filtre HME present et en bon etat"},
-    {id:"c6",t:"Raccord gaz O2 haute pression en bon etat"},
-    {id:"c7",t:"Raccord air medical haute pression en bon etat"},
-    {id:"c8",t:"Capteur O2 dans sa date de validite"},
-    {id:"c9",t:"Humidificateur chauffant en bon etat"},
-    {id:"c10",t:"Piege a eau propre et vide"},
+    {id:"c1",t:"Connecteur inspiratoire 22mm intact — Inspecter le raccord 22mm côté inspiratoire. Vérifier l'absence de fissure, déformation ou jeu excessif.",c:true},
+    {id:"c2",t:"Connecteur expiratoire 22mm intact — Inspecter le raccord 22mm côté expiratoire. Vérifier l'absence de fissure, déformation ou jeu excessif.",c:true},
+    {id:"c3",t:"Valve expiratoire propre, sans dépôt — Retirer la valve et inspecter sous lumière directe. Aucun dépôt blanchâtre, mucus séché ou trace de condensation."},
+    {id:"c4",t:"Filtre bactériologique présent et non périmé — Vérifier la date d'expiration imprimée sur l'emballage. Si périmé ou absent = FAIL immédiat.",c:true},
+    {id:"c5",t:"Filtre HME présent et en bon état — Inspecter visuellement. Aucun dépôt visible ni coloration anormale."},
+    {id:"c6",t:"Raccord gaz O₂ haute pression en bon état — Inspecter le raccord NIST/Diamant O₂. Absence de fuite (test au savon si doute). Couleur blanche standard."},
+    {id:"c7",t:"Raccord air médical haute pression en bon état — Inspecter le raccord NIST/Diamant air médical. Couleur noire/grise standard. Absence de fuite."},
+    {id:"c8",t:"Capteur O₂ dans sa date de validité — Vérifier la date de calibration dans le menu technique. Durée de vie standard : 12 mois (6 mois pour usage SMUR intensif)."},
+    {id:"c9",t:"Humidificateur chauffant en bon état — Vérifier l'absence de calcaire, fissure ou trace de surchauffe sur la chambre."},
+    {id:"c10",t:"Piège à eau propre et vide — Déconnecter le piège, vider et inspecter. Aucun résidu liquidien ni biofilm."},
   ]},
-  {title:"Systeme d'alarmes",items:[
-    {id:"d1",t:"Alarmes sonores fonctionnelles a la mise sous tension",c:true},
-    {id:"d2",t:"Alarmes visuelles fonctionnelles",c:true},
-    {id:"d3",t:"Alarme de debranchement patient declenchee au test",c:true},
-    {id:"d4",t:"Alarme de coupure secteur declenchee au test"},
-    {id:"d5",t:"Autotest de demarrage realise sans erreur",c:true},
-    {id:"d6",t:"Historique des alarmes - aucune alarme critique non resolue"},
+  {title:"Systeme d alarmes",items:[
+    {id:"d1",t:"Alarmes sonores fonctionnelles à la mise sous tension — Mettre le respirateur sous tension et écouter l'autotest sonore. Le signal doit être audible à 1 mètre minimum.",c:true},
+    {id:"d2",t:"Alarmes visuelles fonctionnelles — Vérifier que les voyants et indicateurs LED clignotent correctement lors de l'autotest de démarrage.",c:true},
+    {id:"d3",t:"Alarme de débranchement patient déclenchée au test — Connecter un circuit puis déconnecter brusquement. L'alarme doit se déclencher en moins de 15 secondes.",c:true},
+    {id:"d4",t:"Alarme de coupure secteur déclenchée au test — Débrancher le cordon secteur avec l'appareil en marche. L'alarme sonore doit retentir immédiatement."},
+    {id:"d5",t:"Autotest de démarrage réalisé sans erreur — Laisser l'autotest se terminer complètement. Aucun message d'erreur ou code d'alarme ne doit persister.",c:true},
+    {id:"d6",t:"Historique des alarmes — aucune alarme critique non résolue — Accéder au journal d'alarmes dans le menu technique. Aucune alarme de priorité haute non acquittée."},
   ]},
   {title:"Documentation",items:[
-    {id:"e1",t:"Carnet de maintenance present et a jour"},
-    {id:"e2",t:"Date du dernier etalonnage capteur O2 renseignee"},
-    {id:"e3",t:"Version logicielle notee dans le carnet"},
-    {id:"e4",t:"Manuel d'utilisation disponible"},
+    {id:"e1",t:"Carnet de maintenance présent et à jour — Le carnet doit être physiquement présent sur le chariot. La dernière intervention doit y être consignée."},
+    {id:"e2",t:"Date du dernier étalonnage capteur O₂ renseignée — Consulter le carnet ou le menu technique. La date d'étalonnage doit être inférieure à 12 mois."},
+    {id:"e3",t:"Version logicielle notée dans le carnet — La version firmware affichée dans le menu Système doit correspondre à celle inscrite dans le carnet."},
+    {id:"e4",t:"Manuel d'utilisation disponible — Le manuel (papier ou tablette) doit être accessible dans le service pour ce modèle spécifique."},
   ]},
 ];
 var VB_TESTS=[
@@ -2149,7 +2326,7 @@ function initProc(){
   _renderVA(); _renderVB(); _renderVC(); _updDec();
 }
 function _renderVA(){
-  var el=document.getElementById('proc-A'); if(!el) return;
+  var el=document.getElementById('proc-A')||document.getElementById('volet-a-content'); if(!el) return;
   var h='';
   VA_SEC.forEach(function(sec){
     h+='<div style="font-size:.65rem;font-weight:700;color:var(--teal);text-transform:uppercase;padding:5px 9px;background:var(--teal-lt);border-radius:5px;margin:8px 0 4px;">'+sec.title+'</div>';
@@ -2584,6 +2761,7 @@ async function saveData() {
     nom: currentUser.name,
     role: currentUser.role,
     etab: currentUser.etab || '',
+    email: currentUser.email || '',
     equip: EQUIP,
     cq: CQ,
     nc: NC,
@@ -2639,6 +2817,8 @@ async function loadData(userKey) {
           (d.equip||[]).forEach(function(e){ EQUIP.push(e); });
           (d.cq||[]).forEach(function(c){ CQ.push(c); });
           (d.nc||[]).forEach(function(n){ NC.push(n); });
+          // Restaurer l'email depuis Supabase
+          if(d.email && currentUser && !currentUser.email) currentUser.email = d.email;
           loaded = true;
           console.log('Données chargées depuis Supabase ✓', rows.length, 'enregistrement(s)');
         }
@@ -2747,17 +2927,18 @@ window.testSupabase = testSupabase;
               <option value="">-- Sélectionner une marque --</option>
               <option value="drager">Dräger (Evita 800, V800...)</option>
               <option value="hamilton">Hamilton Medical (G5, C6, T1...)</option>
-              <option value="pb">Puritan Bennett / Medtronic (PB 980...)</option>
+              <option value="aenmed">Aenmed (Shangrila 590P, 590M...)</option>
               <option value="getinge">Getinge / Maquet (Servo-i, Servo-u...)</option>
               <option value="mindray">Mindray (SV800, SV600, SV300...)</option>
               <option value="ge">GE Healthcare (Carestation 750...)</option>
-              <option value="zoll">Zoll Medical (Z Vent...)</option>
+              <option value="heyer">Heyer Medical (SB900, SB800...)</option>
               <option value="airliquide">Air Liquide Medical Systems (MONNAL TEO...)</option>
               <option value="lowenstein">Löwenstein Medical (Leoni plus...)</option>
             </select>
           </div>
         </div>
       </div>
+      <div class="fgroup full"><label>Adresse email * (pour les notifications)</label><input id="reg-email" type="email" placeholder="votre@email.com"></div>
       <div class="fgroup"><label>Identifiant *</label><input id="reg-user" type="text" placeholder="prenom.nom"></div>
       <div class="fgroup"><label>Mot de passe * (min 6)</label><input id="reg-pass" type="password" placeholder="........"></div>
       <div class="fgroup full"><label>Confirmer mot de passe *</label><input id="reg-pass2" type="password" placeholder="........"></div>
