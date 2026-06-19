@@ -16,40 +16,23 @@ const EJS_TEMPLATE = "template_hoa8ort";
 function sendNotifEmail(to_email, subject, message, equipment, etab) {
   if (!to_email) return;
   emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
-    to_email: to_email,
-    subject: subject,
-    message: message,
-    equipment: equipment || "—",
-    etab: etab || "—",
-    date: new Date().toLocaleDateString('fr-FR')
+    from_name:  "BioVentil Manager",
+    reply_to:   "no-reply@bioventil-manager.app",
+    to_email:   to_email,
+    subject:    subject,
+    message:    message,
+    equipment:  equipment || "—",
+    etab:       etab || "—",
+    date:       new Date().toLocaleDateString('fr-FR')
   }).then(function() {
-    console.log('Email notification envoyé à ' + to_email);
+    console.log('Email envoyé à ' + to_email);
   }, function(err) {
-    console.warn('Email notification échoué:', err);
+    console.warn('Email échoué:', err);
   });
 }
 
-// Vérification quotidienne des échéances CQ (appelée au login)
-function checkCQEcheances(user, equips) {
-  if (!user || !user.email) return;
-  var today = new Date();
-  today.setHours(0,0,0,0);
-  equips.forEach(function(eq) {
-    if (!eq.nextCQ) return;
-    var next = new Date(eq.nextCQ);
-    next.setHours(0,0,0,0);
-    var diffDays = Math.round((next - today) / (1000*60*60*24));
-    if (diffDays === 2) {
-      sendNotifEmail(
-        user.email,
-        "⏰ Rappel CQ dans 2 jours — " + eq.name,
-        "Le contrôle qualité de l'équipement " + eq.name + " (N° série : " + (eq.sn||'—') + ") est prévu dans 2 jours, le " + next.toLocaleDateString('fr-FR') + ".\n\nVeuillez préparer l'intervention selon la procédure CQ-RESPI-001.",
-        eq.name + " — " + (eq.marque||'') + " " + (eq.modele||''),
-        user.etab
-      );
-    }
-  });
-}
+// checkCQEcheances — remplacé par checkNotifications (gère le rappel J-2 avec garde localStorage)
+function checkCQEcheances(user, equips) { /* délégué à checkNotifications() */ }
 </script>
 <style>
 /* ═══════════════════════════════════════════
@@ -534,7 +517,10 @@ textarea{resize:vertical;min-height:70px;}
       <div style="display:flex;align-items:center;gap:7px;padding:4px 12px 4px 5px;background:var(--gray1);border:1px solid var(--border);border-radius:20px;">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#fff;">NL</div>
         <div id="user-chip-txt" style="font-size:.7rem;font-weight:600;color:var(--text);">Nada Laouidi</div>
-        <button onclick="doLogout()" title="Deconnexion" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.8rem;padding:0 0 0 3px;">✕</button>
+        <button onclick="doLogout()" title="Se déconnecter" style="display:inline-flex;align-items:center;gap:5px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--muted);font-size:.68rem;font-family:'Syne';font-weight:600;padding:3px 8px;margin-left:2px;transition:all .18s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Déconnexion
+        </button>
       </div>
     </div>
   </div>
@@ -792,14 +778,29 @@ textarea{resize:vertical;min-height:70px;}
               <select id="s-motif"><option>Post-maintenance (curative)</option><option>Périodique (préventive)</option><option>Réception</option></select>
             </div>
             <div class="fgroup"><label>N° rapport OneQA</label><input type="text" id="s-oneqa" placeholder="OQA-XXXX"></div>
-            <div class="fgroup"><label>Résultat Volet A (visuel)</label>
-              <select id="s-va"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
+            <div class="fgroup"><label>Résultat Volet A — Inspection visuelle</label>
+              <select id="s-va" onchange="toggleFail('a')"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
             </div>
-            <div class="fgroup"><label>Résultat Volet B — ESA715 (électrique)</label>
-              <select id="s-vb"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
+            <div class="fgroup full" id="fail-a" style="display:none">
+              <label>Anomalie(s) Volet A — Inspection visuelle</label>
+              <div id="fail-a-items" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div>
+              <button type="button" class="btn btn-outline" style="margin-top:8px;width:fit-content;font-size:.7rem;" onclick="addFailItem('a')">+ Ajouter une anomalie</button>
             </div>
-            <div class="fgroup"><label>Résultat Volet C — VT900A (pneumatique)</label>
-              <select id="s-vc"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
+            <div class="fgroup"><label>Résultat Volet B — Sécurité électrique (ESA715)</label>
+              <select id="s-vb" onchange="toggleFail('b')"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
+            </div>
+            <div class="fgroup full" id="fail-b" style="display:none">
+              <label>Paramètre(s) non conforme(s) Volet B</label>
+              <div id="fail-b-items" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div>
+              <button type="button" class="btn btn-outline" style="margin-top:8px;width:fit-content;font-size:.7rem;" onclick="addFailItem('b')">+ Ajouter un paramètre</button>
+            </div>
+            <div class="fgroup"><label>Résultat Volet C — Performance pneumatique (VT900A)</label>
+              <select id="s-vc" onchange="toggleFail('c')"><option value="PASS">PASS</option><option value="WARNING">WARNING</option><option value="FAIL">FAIL</option></select>
+            </div>
+            <div class="fgroup full" id="fail-c" style="display:none">
+              <label>Paramètre(s) non conforme(s) Volet C</label>
+              <div id="fail-c-items" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div>
+              <button type="button" class="btn btn-outline" style="margin-top:8px;width:fit-content;font-size:.7rem;" onclick="addFailItem('c')">+ Ajouter un paramètre</button>
             </div>
             <div class="fgroup full"><label>Observations / Anomalies relevées</label>
               <textarea id="s-obs" placeholder="Décrire les anomalies détectées, valeurs hors tolérance, actions immédiates prises…"></textarea>
@@ -851,8 +852,8 @@ textarea{resize:vertical;min-height:70px;}
     </div>
 
     <!-- VOLET A -->
-    <div class="card" style="margin-bottom:18px;">
-      <div class="card-h" style="background:#1a3a5c;"><span class="card-title" style="color:#fff;">VOLET A — INSPECTION VISUELLE</span><span class="tag" style="background:rgba(255,255,255,.15);color:#fff;">27 items · Manuel</span></div>
+    <div class="card" style="margin-bottom:18px;overflow:visible;">
+      <div class="card-h" style="background:#1a3a5c;border-radius:10px 10px 0 0;"><span class="card-title" style="color:#fff;">VOLET A — INSPECTION VISUELLE</span><span class="tag" style="background:rgba(255,255,255,.15);color:#fff;">27 items · Manuel</span></div>
       <div class="card-body">
         <div class="info-box ib-teal">PASS = conforme · FAIL = non conforme (arrêt si item critique ⚠) · N/A = non applicable sur ce modèle</div>
         <div id="volet-a-content"></div>
@@ -1060,6 +1061,17 @@ textarea{resize:vertical;min-height:70px;}
 <div id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════════════════
+//  pSt et setVA déclarés EN PREMIER — accessibles globalement
+// ═══════════════════════════════════════════════════════════
+var pSt = {A:{},B:{},C:{}};
+window.pSt = pSt;
+window.setVA = function(id, val) {
+  pSt.A[id] = val;
+  _renderVA();
+  _updDec();
+};
+
 // ═══════════════════════════════════════════════════════════
 //  DATA — Équipements
 // ═══════════════════════════════════════════════════════════
@@ -1827,7 +1839,7 @@ function planifierCQ(){
 
   toast('✅ CQ planifié le ' + planDate.toLocaleDateString('fr-FR') + ' — Email envoyé !');
   renderPlanTable();
-  if(!isDemo()) saveData();
+  saveData();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1939,6 +1951,35 @@ function genRpt(){
 // ═══════════════════════════════════════════════════════════
 //  SAISIE CQ
 // ═══════════════════════════════════════════════════════════
+var FAIL_OPTS = {
+  a: ['Cordon secteur endommagé','Prise secteur défectueuse','Boîtier fissuré / endommagé','Écran tactile non fonctionnel','Alarme sonore non fonctionnelle','Alarme visuelle non fonctionnelle','Circuit patient endommagé','Filtre bactériologique absent / périmé','Documentation manquante','Autre anomalie visuelle'],
+  b: ['Résistance de terre','Résistance d\'isolement','Courant de fuite équipement (CN)','Courant de fuite équipement (1er défaut)','Courant de fuite patient Type B (CN)','Courant de fuite patient Type B (1er défaut)','Courant de contact boîtier'],
+  c: ['Test d\'étanchéité','Volume courant (VCV sans PEEP)','Volume courant (VCV avec PEEP)','Fréquence respiratoire','PEEP','Pression inspiratoire (VCP)','Rapport I:E','FiO₂ — 21%','FiO₂ — 60%','FiO₂ — 80%','FiO₂ — 100%','Débit inspiratoire de pointe']
+};
+
+function addFailItem(v){
+  var container = document.getElementById('fail-'+v+'-items');
+  var idx = container.children.length;
+  var opts = FAIL_OPTS[v].map(function(o){return '<option>'+o+'</option>';}).join('');
+  var unit = v==='b' ? 'µA / Ω / MΩ' : v==='c' ? 'mL / cmH₂O / L/min / %' : '';
+  var row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;background:var(--gray1);padding:8px 10px;border-radius:7px;border:1px solid var(--border);';
+  row.innerHTML = '<select style="font-size:.73rem;"><option value="">-- Paramètre --</option>'+opts+'</select>'
+    +'<input type="text" placeholder="Valeur obtenue ('+unit+')" style="font-size:.73rem;">'
+    +'<button type="button" onclick="this.parentNode.remove()" style="background:var(--red-lt);border:1px solid var(--fail-border);color:var(--red);border-radius:5px;padding:4px 8px;cursor:pointer;font-size:.75rem;">✕</button>';
+  container.appendChild(row);
+}
+
+function toggleFail(v){
+  var val = document.getElementById('s-v'+v).value;
+  var el = document.getElementById('fail-'+v);
+  if(el){
+    el.style.display = (val==='FAIL'||val==='WARNING') ? 'block' : 'none';
+    var container = document.getElementById('fail-'+v+'-items');
+    if((val==='FAIL'||val==='WARNING') && container && container.children.length===0) addFailItem(v);
+  }
+}
+
 function initSaisie(){
   const sel=document.getElementById('s-equip');
   if(!sel.options.length) EQUIP.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name} — ${e.marque} ${e.modele}</option>`);
@@ -2179,7 +2220,8 @@ function doRegister() {
   closeM('m-register');
   document.getElementById('log-user').value = u;
   document.getElementById('log-pass').value = p;
-  toast('Compte créé ! Connectez-vous avec vos identifiants.');
+  toast('Compte créé ! Connexion en cours…');
+  setTimeout(function(){ doLogin(); }, 300);
 }
 
 // Enter key on password field
@@ -2317,7 +2359,7 @@ var VC_GROUPS=[
     {id:"c16",p:"FiO2 = 100%",cons:"100%",tol:"97-100%",chk:function(v){return v>=97;}},
   ]},
 ];
-var pSt = {A:{},B:{},C:{}};
+// pSt et setVA déclarés en haut du script — voir début du bloc
 
 function initProc(){
   Object.keys(pSt.A).forEach(function(k){delete pSt.A[k];});
@@ -2326,24 +2368,40 @@ function initProc(){
   _renderVA(); _renderVB(); _renderVC(); _updDec();
 }
 function _renderVA(){
-  var el=document.getElementById('proc-A')||document.getElementById('volet-a-content'); if(!el) return;
+  var el=document.getElementById('volet-a-content'); if(!el) return;
   var h='';
   VA_SEC.forEach(function(sec){
     h+='<div style="font-size:.65rem;font-weight:700;color:var(--teal);text-transform:uppercase;padding:5px 9px;background:var(--teal-lt);border-radius:5px;margin:8px 0 4px;">'+sec.title+'</div>';
-    h+='<div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:4px;padding:4px 7px;font-size:.59rem;font-weight:700;color:var(--muted);text-transform:uppercase;background:var(--gray1);">'+
-       '<span>Item</span><span style="text-align:center">PASS</span><span style="text-align:center">FAIL</span><span style="text-align:center">N/A</span></div>';
+    h+='<div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 64px 64px;gap:4px;padding:4px 7px;font-size:.59rem;font-weight:700;color:var(--muted);text-transform:uppercase;background:var(--gray1);">'
+      +'<span>Item</span><span style="text-align:center">PASS</span><span style="text-align:center">FAIL</span><span style="text-align:center">N/A</span></div>';
     sec.items.forEach(function(it){
       var v=pSt.A[it.id]||'';
-      var bg=it.c?'#fffdf0':'#fff';
-      h+='<div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:4px;align-items:center;padding:5px 7px;border-bottom:1px solid var(--gray1);background:'+bg+';">';
-      h+='<span style="font-size:.71rem;">'+it.t+(it.c?'<span style="font-size:.57rem;background:var(--fail-bg);color:var(--red);border-radius:3px;padding:1px 4px;margin-left:4px;">CRITIQUE</span>':'')+'</span>';
+      var rowbg=it.c?'#fffdf0':'#fff';
+      h+='<div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 64px 64px;gap:4px;align-items:center;padding:5px 7px;border-bottom:1px solid var(--gray1);background:'+rowbg+';">';
+      h+='<span style="font-size:.71rem;min-width:0;word-break:break-word;">'+it.t+(it.c?'<span style="font-size:.57rem;background:var(--fail-bg);color:var(--red);border-radius:3px;padding:1px 4px;margin-left:4px;">CRITIQUE</span>':'')+'</span>';
       ['PASS','FAIL','NA'].forEach(function(opt){
         var sel=v===opt;
-        var bc=sel?(opt==='PASS'?'var(--pass-border)':opt==='FAIL'?'var(--fail-border)':'var(--pend-border)'):'var(--border)';
-        var bg2=sel?(opt==='PASS'?'var(--pass-bg)':opt==='FAIL'?'var(--fail-bg)':'var(--pend-bg)'):'var(--gray1)';
-        var tc=sel?(opt==='PASS'?'var(--pass-text)':opt==='FAIL'?'var(--fail-text)':'var(--pend-text)'):'var(--muted)';
-        var lbl=opt==='NA'?'N/A':opt;
-        h+='<div style="display:flex;justify-content:center"><button onclick="setVA(\''+it.id+'\',\''+opt+'\')" style="background:'+bg2+';border:1.5px solid '+bc+';border-radius:5px;padding:3px 8px;cursor:pointer;font-size:.63rem;font-weight:700;color:'+tc+';">'+lbl+'</button></div>';
+        var bc, bg2, tc;
+        if(!sel){
+          bc='var(--border)'; bg2='var(--gray1)'; tc='var(--muted)';
+        } else if(opt==='PASS'){
+          bc='var(--pass-border)'; bg2='var(--pass-bg)'; tc='var(--pass-text)';
+        } else if(opt==='FAIL'){
+          bc='var(--fail-border)'; bg2='var(--fail-bg)'; tc='var(--fail-text)';
+        } else {
+          // NA sélectionné : fond ambre bien visible
+          bc='#c97a1a'; bg2='#fff0cc'; tc='#7a4800';
+        }
+        var lbl =opt==='NA'?'N/A':opt;
+        var eid =it.id.replace(/'/g,"\\'");
+        var selStyle = sel ? 'box-shadow:0 0 0 2px '+bc+';' : '';
+        h+='<div style="display:flex;justify-content:center;align-items:center;">'
+          +'<button type="button" onclick="window.setVA(\''+eid+'\',\''+opt+'\')" '
+          +'style="width:54px;height:28px;background:'+bg2+';border:2px solid '+bc+';border-radius:5px;'
+          +'cursor:pointer;font-size:.63rem;font-weight:700;color:'+tc+';text-align:center;'
+          +'font-family:\'Syne\',sans-serif;line-height:1;padding:0;box-sizing:border-box;'
+          +'pointer-events:all;position:relative;z-index:5;'+selStyle+'">'+lbl+'</button>'
+          +'</div>';
       });
       h+='</div>';
     });
@@ -2351,20 +2409,21 @@ function _renderVA(){
   el.innerHTML=h;
   _updVASynth();
 }
-function setVA(id,val){pSt.A[id]=val;_renderVA();_updDec();}
 function _updVASynth(){
   var vs=Object.values(pSt.A);
   var p=vs.filter(function(v){return v==='PASS';}).length;
   var f=vs.filter(function(v){return v==='FAIL';}).length;
   var n=vs.filter(function(v){return v==='NA';}).length;
-  var el=document.getElementById('va-synth'); if(el) el.textContent=p+' PASS / '+f+' FAIL / '+n+' N/A';
+  var elP=document.getElementById('va-pass-cnt'); if(elP) elP.textContent=p;
+  var elF=document.getElementById('va-fail-cnt'); if(elF) elF.textContent=f;
+  var elN=document.getElementById('va-na-cnt');   if(elN) elN.textContent=n;
   var cf=[];
   VA_SEC.forEach(function(s){s.items.forEach(function(i){if(i.c&&pSt.A[i.id]==='FAIL')cf.push(i);});});
-  var dec=document.getElementById('va-dec'); if(!dec) return;
-  if(cf.length>0) dec.innerHTML='<span style="color:var(--red);font-weight:700;">ARRET — HORS SERVICE IMMEDIAT (item critique FAIL)</span>';
-  else if(f>0) dec.innerHTML='<span style="color:var(--amber);font-weight:600;">Items FAIL non critiques — Documenter et poursuivre</span>';
-  else if(p>0) dec.innerHTML='<span style="color:var(--green);font-weight:600;">Tous items critiques PASS — Passer au Volet B</span>';
-  else dec.innerHTML='';
+  var dec=document.getElementById('va-decision'); if(!dec) return;
+  if(cf.length>0) dec.innerHTML='<span style="color:var(--red);font-weight:700;">⛔ ARRÊT — HORS SERVICE IMMÉDIAT (item critique FAIL)</span>';
+  else if(f>0)    dec.innerHTML='<span style="color:var(--amber);font-weight:600;">⚠ Items FAIL non critiques — Documenter et poursuivre</span>';
+  else if(p>0)    dec.innerHTML='<span style="color:var(--green);font-weight:600;">✅ Tous items critiques PASS — Passer au Volet B</span>';
+  else            dec.textContent='Compléter tous les items pour obtenir la décision';
 }
 function _renderVB(){
   var tb=document.getElementById('proc-B'); if(!tb) return;
@@ -2418,6 +2477,75 @@ function evalVC(){
   if(s&&anyFil)s.innerHTML='<div style="padding:7px 10px;border-radius:6px;background:'+(anyF?'var(--fail-bg)':'var(--pass-bg)')+';border:1px solid '+(anyF?'var(--fail-border)':'var(--pass-border)')+'"><strong style="color:'+(anyF?'var(--fail-text)':'var(--pass-text)')+';">Volet C : '+(anyF?'FAIL':'PASS')+'</strong></div>';
   _updDec();
 }
+// Alias pour les inputs statiques du Volet B (ids: b0-lt, b0-nt, b-rt, b-ri, b-fcn, b-fcp, b-fi, b-cc, b-pcn, b-pcp)
+function calcVB(){
+  var map = [
+    {el:'b0-lt', chk:function(v){return v>=207&&v<=253;}, rb:'rb0-lt'},
+    {el:'b0-nt', chk:function(v){return v<=2;},           rb:'rb0-nt'},
+    {el:'b-rt',  chk:function(v){return v<=0.3;},          rb:'rb-rt'},
+    {el:'b-ri',  chk:function(v){return v>=2;},            rb:'rb-ri'},
+    {el:'b-fcn', chk:function(v){return v<=1000;},         rb:'rb-fcn'},
+    {el:'b-fcp', chk:function(v){return v<=5000;},         rb:'rb-fcp'},
+    {el:'b-fi',  chk:function(v){return v<=1000;},         rb:'rb-fi'},
+    {el:'b-cc',  chk:function(v){return v<=100;},          rb:'rb-cc'},
+    {el:'b-pcn', chk:function(v){return v<=100;},          rb:'rb-pcn'},
+    {el:'b-pcp', chk:function(v){return v<=500;},          rb:'rb-pcp'}
+  ];
+  var anyF=false, anyFil=false;
+  map.forEach(function(m){
+    var el=document.getElementById(m.el), rb=document.getElementById(m.rb);
+    if(!el||!rb)return;
+    if(el.value===''){rb.innerHTML='<span class="mb-nd">—</span>';delete pSt.B[m.el];return;}
+    anyFil=true;
+    var ok=m.chk(parseFloat(el.value)); if(!ok)anyF=true;
+    pSt.B[m.el]={ok:ok};
+    rb.innerHTML=ok?'<span class="mb-pass">PASS</span>':'<span class="mb-fail">FAIL</span>';
+  });
+  var s=document.getElementById('vb-synth');
+  if(s&&anyFil){s.style.display='block';s.innerHTML='<div style="padding:7px 10px;border-radius:6px;background:'+(anyF?'var(--fail-bg)':'var(--pass-bg)')+';border:1px solid '+(anyF?'var(--fail-border)':'var(--pass-border)')+'"><strong style="color:'+(anyF?'var(--fail-text)':'var(--pass-text)')+';">Volet B : '+(anyF?'FAIL':'PASS')+'</strong></div>';}
+  _updDec();
+}
+
+// Alias pour les inputs statiques du Volet C
+function calcVC(){
+  var map = [
+    {el:'c-et',      chk:function(v){return v<=2;},            rb:'rc-et'},
+    {el:'c-vt',      chk:function(v){return v>=450&&v<=550;},  rb:'rc-vt'},
+    {el:'c-fr',      chk:function(v){return v>=13&&v<=17;},    rb:'rc-fr'},
+    {el:'c-peep',    chk:function(v){return v>=3&&v<=7;},      rb:'rc-peep'},
+    {el:'c-fio2',    chk:function(v){return v>=37&&v<=43;},    rb:'rc-fio2'},
+    {el:'c-db',      chk:function(v){return v>=36&&v<=44;},    rb:'rc-db'},
+    {el:'c-ie',      chk:function(v){return v>=0.9&&v<=1.1;},  rb:'rc-ie'},
+    {el:'c-sp-vt',   chk:function(v){return v>=450&&v<=550;},  rb:'rc-sp-vt'},
+    {el:'c-sp-fr',   chk:function(v){return v>=13&&v<=17;},    rb:'rc-sp-fr'},
+    {el:'c-sp-peep', chk:function(v){return v<=2;},            rb:'rc-sp-peep'},
+    {el:'c-vp-pi',   chk:function(v){return v>=18&&v<=22;},    rb:'rc-vp-pi'},
+    {el:'c-vp-peep', chk:function(v){return v>=3&&v<=7;},      rb:'rc-vp-peep'},
+    {el:'c-vp-fr',   chk:function(v){return v>=13&&v<=17;},    rb:'rc-vp-fr'},
+    {el:'c-vp-fio2', chk:function(v){return v>=37&&v<=43;},    rb:'rc-vp-fio2'},
+    {el:'c-vps-pi',  chk:function(v){return v>=18&&v<=22;},    rb:'rc-vps-pi'},
+    {el:'c-vps-fr',  chk:function(v){return v>=13&&v<=17;},    rb:'rc-vps-fr'},
+    {el:'c-vps-peep',chk:function(v){return v<=2;},            rb:'rc-vps-peep'},
+    {el:'c-f21',     chk:function(v){return v>=18&&v<=24;},    rb:'rc-f21'},
+    {el:'c-f60',     chk:function(v){return v>=57&&v<=63;},    rb:'rc-f60'},
+    {el:'c-f80',     chk:function(v){return v>=77&&v<=83;},    rb:'rc-f80'},
+    {el:'c-f100',    chk:function(v){return v>=97;},           rb:'rc-f100'}
+  ];
+  var anyF=false, anyFil=false;
+  map.forEach(function(m){
+    var el=document.getElementById(m.el), rb=document.getElementById(m.rb);
+    if(!el||!rb)return;
+    if(el.value===''){rb.innerHTML='<span class="mb-nd">—</span>';delete pSt.C[m.el];return;}
+    anyFil=true;
+    var ok=m.chk(parseFloat(el.value)); if(!ok)anyF=true;
+    pSt.C[m.el]={ok:ok};
+    rb.innerHTML=ok?'<span class="mb-pass">PASS</span>':'<span class="mb-fail">FAIL</span>';
+  });
+  var s=document.getElementById('vc-synth');
+  if(s&&anyFil){s.style.display='block';s.innerHTML='<div style="padding:7px 10px;border-radius:6px;background:'+(anyF?'var(--fail-bg)':'var(--pass-bg)')+';border:1px solid '+(anyF?'var(--fail-border)':'var(--pass-border)')+'"><strong style="color:'+(anyF?'var(--fail-text)':'var(--pass-text)')+';">Volet C : '+(anyF?'FAIL':'PASS')+'</strong></div>';}
+  _updDec();
+}
+
 function _getRes(){
   var cf=[];VA_SEC.forEach(function(s){s.items.forEach(function(i){if(i.c&&pSt.A[i.id]==='FAIL')cf.push(i);});});
   var vA=cf.length>0?'FAIL':(Object.values(pSt.A).indexOf('FAIL')>=0?'WARNING':(Object.values(pSt.A).length>0?'PASS':null));
@@ -2432,11 +2560,12 @@ function _updDec(){
   var gc={PASS:'var(--pass-text)',WARNING:'var(--warn-text)',FAIL:'var(--fail-text)'};
   var bgc={PASS:'var(--pass-bg)',WARNING:'var(--warn-bg)',FAIL:'var(--fail-bg)'};
   var bc={PASS:'var(--pass-border)',WARNING:'var(--warn-border)',FAIL:'var(--fail-border)'};
-  [['dec-A',r.vA],['dec-B',r.vB],['dec-C',r.vC]].forEach(function(x){
+  // Mettre a jour les indicateurs de decision (IDs statiques: final-va/vb/vc + final-decision)
+  [['final-va',r.vA],['final-vb',r.vB],['final-vc',r.vC],['dec-A',r.vA],['dec-B',r.vB],['dec-C',r.vC]].forEach(function(x){
     var el=document.getElementById(x[0]); if(!el)return;
     el.style.color=x[1]?gc[x[1]]:'var(--muted)'; el.textContent=x[1]||'—';
   });
-  var fd=document.getElementById('dec-final'); if(!fd)return;
+  var fd=document.getElementById('final-decision')||document.getElementById('dec-final'); if(!fd)return;
   if(r.global){
     var lbl={PASS:'REMIS EN SERVICE',WARNING:'SURVEILLANCE RENFORCEE',FAIL:'HORS SERVICE IMMEDIAT'};
     fd.style.background=bgc[r.global]; fd.style.borderColor=bc[r.global]; fd.style.color=gc[r.global];
@@ -2461,6 +2590,149 @@ function saveProc(){
   setTimeout(function(){go('saisie');},800);
 }
 
+// Enregistrement direct depuis la Procedure CQ (bouton principal)
+function saveFromProc() {
+  // Forcer le recalcul des volets B et C depuis les inputs statiques avant de lire le resultat
+  if (typeof calcVB === 'function') calcVB();
+  if (typeof calcVC === 'function') calcVC();
+
+  // Si pSt.B et pSt.C sont toujours vides (inputs vides), lire directement les valeurs
+  // et construire un resultat depuis les inputs statiques visibles
+  var vA = null, vB = null, vC = null;
+
+  // Volet A
+  var aVals = Object.values(pSt.A);
+  if (aVals.length > 0) {
+    var aCrit = [];
+    VA_SEC.forEach(function(s){s.items.forEach(function(i){if(i.c&&pSt.A[i.id]==='FAIL')aCrit.push(i);});});
+    vA = aCrit.length > 0 ? 'FAIL' : (aVals.indexOf('FAIL') >= 0 ? 'WARNING' : 'PASS');
+  }
+
+  // Volet B — lire inputs statiques directement
+  var bMap = [
+    {el:'b0-lt', chk:function(v){return v>=207&&v<=253;}},
+    {el:'b0-nt', chk:function(v){return v<=2;}},
+    {el:'b-rt',  chk:function(v){return v<=0.3;}},
+    {el:'b-ri',  chk:function(v){return v>=2;}},
+    {el:'b-fcn', chk:function(v){return v<=1000;}},
+    {el:'b-fcp', chk:function(v){return v<=5000;}},
+    {el:'b-fi',  chk:function(v){return v<=1000;}},
+    {el:'b-cc',  chk:function(v){return v<=100;}},
+    {el:'b-pcn', chk:function(v){return v<=100;}},
+    {el:'b-pcp', chk:function(v){return v<=500;}}
+  ];
+  var bFilled = false, bFail = false;
+  bMap.forEach(function(m){
+    var el = document.getElementById(m.el);
+    if (!el || el.value === '') return;
+    bFilled = true;
+    if (!m.chk(parseFloat(el.value))) bFail = true;
+  });
+  if (bFilled) vB = bFail ? 'FAIL' : 'PASS';
+  // Fusionner avec pSt.B si disponible
+  if (!bFilled && Object.keys(pSt.B).length > 0) {
+    var bv = Object.values(pSt.B);
+    vB = bv.some(function(x){return !x.ok;}) ? 'FAIL' : 'PASS';
+  }
+
+  // Volet C — lire inputs statiques directement
+  var cMap = [
+    {el:'c-et',       chk:function(v){return v<=2;}},
+    {el:'c-vt',       chk:function(v){return v>=450&&v<=550;}},
+    {el:'c-fr',       chk:function(v){return v>=13&&v<=17;}},
+    {el:'c-peep',     chk:function(v){return v>=3&&v<=7;}},
+    {el:'c-fio2',     chk:function(v){return v>=37&&v<=43;}},
+    {el:'c-db',       chk:function(v){return v>=36&&v<=44;}},
+    {el:'c-ie',       chk:function(v){return v>=0.9&&v<=1.1;}},
+    {el:'c-sp-vt',    chk:function(v){return v>=450&&v<=550;}},
+    {el:'c-sp-fr',    chk:function(v){return v>=13&&v<=17;}},
+    {el:'c-sp-peep',  chk:function(v){return v<=2;}},
+    {el:'c-vp-pi',    chk:function(v){return v>=18&&v<=22;}},
+    {el:'c-vp-peep',  chk:function(v){return v>=3&&v<=7;}},
+    {el:'c-vp-fr',    chk:function(v){return v>=13&&v<=17;}},
+    {el:'c-vp-fio2',  chk:function(v){return v>=37&&v<=43;}},
+    {el:'c-vps-pi',   chk:function(v){return v>=18&&v<=22;}},
+    {el:'c-vps-fr',   chk:function(v){return v>=13&&v<=17;}},
+    {el:'c-vps-peep', chk:function(v){return v<=2;}},
+    {el:'c-f21',      chk:function(v){return v>=18&&v<=24;}},
+    {el:'c-f60',      chk:function(v){return v>=57&&v<=63;}},
+    {el:'c-f80',      chk:function(v){return v>=77&&v<=83;}},
+    {el:'c-f100',     chk:function(v){return v>=97;}}
+  ];
+  var cFilled = false, cFail = false;
+  cMap.forEach(function(m){
+    var el = document.getElementById(m.el);
+    if (!el || el.value === '') return;
+    cFilled = true;
+    if (!m.chk(parseFloat(el.value))) cFail = true;
+  });
+  if (cFilled) vC = cFail ? 'FAIL' : 'PASS';
+  // Fusionner avec pSt.C si disponible
+  if (!cFilled && Object.keys(pSt.C).length > 0) {
+    var cv = Object.values(pSt.C);
+    vC = cv.some(function(x){return !x.ok;}) ? 'FAIL' : 'PASS';
+  }
+
+  // Calculer le global
+  var all = [vA, vB, vC].filter(function(x){ return x !== null; });
+  var globalRes = all.length === 0 ? null : (all.indexOf('FAIL') >= 0 ? 'FAIL' : (all.indexOf('WARNING') >= 0 ? 'WARNING' : 'PASS'));
+  var r = { vA: vA, vB: vB, vC: vC, global: globalRes };
+
+  if (!r.global) { toast('Aucune donnee saisie — remplissez au moins un champ dans les volets.'); return; }
+
+  var marque  = (document.getElementById('proc-marque')  ? document.getElementById('proc-marque').value.trim()  : '');
+  var modele  = (document.getElementById('proc-modele')  ? document.getElementById('proc-modele').value.trim()  : '');
+  var sn      = (document.getElementById('proc-sn')      ? document.getElementById('proc-sn').value.trim()      : '');
+  var service = (document.getElementById('proc-service') ? document.getElementById('proc-service').value.trim() : '-');
+  var op      = (document.getElementById('proc-op')      ? document.getElementById('proc-op').value.trim()      : '');
+  var fn      = (document.getElementById('proc-fn')      ? document.getElementById('proc-fn').value              : 'Ingenieur biomedical');
+  var motif   = (document.getElementById('proc-motif')   ? document.getElementById('proc-motif').value          : 'Periodique (preventive)');
+  var dateVal = (document.getElementById('proc-date')    ? document.getElementById('proc-date').value           : new Date().toISOString().split('T')[0]);
+  var oneqa   = (document.getElementById('proc-oneqa')   ? document.getElementById('proc-oneqa').value.trim()  : '');
+  var obs     = (document.getElementById('proc-sig')     ? document.getElementById('proc-sig').value.trim()    : '');
+  var nextCQ  = (document.getElementById('proc-next')    ? document.getElementById('proc-next').value          : '');
+
+  if (!dateVal) dateVal = new Date().toISOString().split('T')[0];
+  if (!op) op = (currentUser ? currentUser.name : 'Operateur');
+
+  // Trouver l'equipement correspondant (SN, puis marque+modele, puis premier)
+  var eq = null;
+  if (sn) eq = EQUIP.find(function(e){ return e.sn && e.sn.trim() === sn; });
+  if (!eq && marque && modele) eq = EQUIP.find(function(e){ return e.marque === marque && e.modele === modele; });
+  if (!eq && EQUIP.length > 0) eq = EQUIP[0];
+
+  var equipId = eq ? eq.id : null;
+
+  if (!equipId) {
+    var newEqId = EQUIP.length ? (Math.max.apply(null, EQUIP.map(function(e){return e.id;})) + 1) : 1;
+    var newEq = { id: newEqId, name: (marque||'Respirateur')+(modele?' '+modele:'')+(sn?' ('+sn+')':''), sn: sn||'-', inv: '-', marque: marque||'Inconnu', modele: modele||'-', service: service||'-', classe: 'I', lastCQ: dateVal, status: r.global, period: 6, nextCQ: nextCQ||null };
+    EQUIP.push(newEq);
+    equipId = newEqId;
+    eq = newEq;
+  }
+
+  var newCqId = CQ.length ? (Math.max.apply(null, CQ.map(function(c){return c.id;})) + 1) : 1;
+  var etabVal = (currentUser ? (currentUser.etab || service) : service) || '-';
+  var newCQ = { id: newCqId, equipId: equipId, date: dateVal, op: op, fn: fn, etab: etabVal, motif: motif, oneqa: oneqa||('OQA-'+String(newCqId).padStart(4,'0')), vA: r.vA||'PASS', vB: r.vB||'PASS', vC: r.vC||'PASS', global: r.global, obs: obs||('CQ procedure BioVentil Manager. A:'+(r.vA||'-')+' B:'+(r.vB||'-')+' C:'+(r.vC||'-')+'.') };
+  CQ.push(newCQ);
+
+  if (eq) {
+    eq.status = r.global;
+    eq.lastCQ = dateVal;
+    if (nextCQ) { eq.nextCQ = nextCQ; } else { var d=new Date(dateVal); d.setMonth(d.getMonth()+(eq.period||6)); eq.nextCQ=d.toISOString().split('T')[0]; }
+  }
+
+  if (r.global === 'FAIL' || r.global === 'WARNING') {
+    var ncId = NC.length ? (Math.max.apply(null, NC.map(function(n){return n.id;})) + 1) : 1;
+    NC.push({ id: ncId, equipId: equipId, cqId: newCQ.id, opened: dateVal, status: 'open', severity: r.global, diagnostic: r.global+' detecte au CQ du '+fmt(dateVal)+'. A:'+(r.vA||'-')+' B:'+(r.vB||'-')+' C:'+(r.vC||'-')+'. '+newCQ.obs, actions: [{date: dateVal, action: 'Resultat '+r.global+' enregistre. Fiche NC ouverte.', done: true}], resolution: null });
+    toast(r.global+' enregistre dans BioVentil Manager — NC-'+String(ncId).padStart(3,'0')+' ouverte !');
+  } else {
+    toast('Resultat PASS enregistre et sauvegarde dans BioVentil Manager !');
+  }
+  renderDash(); updateNCBadge();
+  saveData();
+}
+
 
 // =========================================================
 // ROLES ET ACCÈS
@@ -2475,7 +2747,7 @@ function saveProc(){
 var ACCESS_RULES = {
   // Par identifiant (comptes de démo)
   ingenieur:   ['dash','parc','proc','saisie','prep','nc','brands','plan','hist','rpt'],
-  technicien:  ['dash','parc','proc','saisie','prep','plan','hist'],
+  technicien:  ['dash','parc','proc','saisie','prep','nc','brands','plan','hist'],
   responsable: ['dash','parc','hist','rpt','plan','nc'],
   direction:   ['dash','rpt'],
   fournisseur: ['dash','brands'],
@@ -2483,7 +2755,7 @@ var ACCESS_RULES = {
   'scrim':     ['dash','brands'],
   // Par niveau d'accès (nouveaux comptes)
   'all':  ['dash','parc','proc','saisie','prep','nc','brands','plan','hist','rpt'],
-  'tech': ['dash','parc','proc','saisie','prep','plan','hist'],
+  'tech': ['dash','parc','proc','saisie','prep','nc','brands','plan','hist'],
   'resp': ['dash','parc','hist','rpt','plan','nc'],
   'dir':  ['dash','rpt'],
   'dist': ['dash','brands'],
@@ -2632,7 +2904,9 @@ function checkNotifications() {
   EQUIP.forEach(function(e) {
     if (!e.nextCQ) return;
     var next = new Date(e.nextCQ);
-    var diff = Math.round((next - today) / 86400000);
+    next.setHours(0,0,0,0);
+    var todayMid = new Date(); todayMid.setHours(0,0,0,0);
+    var diff = Math.round((next - todayMid) / 86400000);
     if (diff >= 0 && diff <= 2) {
       notifs.push({
         type: 'reminder',
@@ -2640,6 +2914,29 @@ function checkNotifications() {
         body: 'Le contrôle qualité de ' + e.name + ' est prévu dans ' + diff + ' jour(s) (le ' + fmtDate(e.nextCQ) + ').',
         urgency: 'normal'
       });
+      // Email de rappel J-2 : une seule fois par jour par équipement (garde localStorage)
+      if (diff === 2 && currentUser && currentUser.email) {
+        var todayStr = new Date().toISOString().split('T')[0];
+        var guardKey = 'rappel2j_' + e.id + '_' + todayStr;
+        if (!localStorage.getItem(guardKey)) {
+          localStorage.setItem(guardKey, '1');
+          sendNotifEmail(
+            currentUser.email,
+            '⏰ Rappel — CQ dans 2 jours : ' + e.name,
+            'Bonjour,\n\nCeci est un rappel automatique de BioVentil Manager.\n\n'
+            + 'Le contrôle qualité de l\'équipement suivant est prévu dans 2 jours :\n\n'
+            + '  Équipement : ' + e.name + '\n'
+            + '  Marque / Modèle : ' + (e.marque||'') + ' ' + (e.modele||'') + '\n'
+            + '  N° de série : ' + (e.sn||'—') + '\n'
+            + '  Service : ' + (e.service||'—') + '\n'
+            + '  Date prévue : ' + next.toLocaleDateString('fr-FR') + '\n\n'
+            + 'Veuillez préparer l\'intervention selon la procédure CQ-RESPI-001.\n\n'
+            + '— BioVentil Manager',
+            e.name + ' — ' + (e.marque||'') + ' ' + (e.modele||''),
+            currentUser.etab
+          );
+        }
+      }
     }
     if (diff < 0) {
       notifs.push({
@@ -2754,7 +3051,14 @@ function isDemo() {
 
 // ── SAUVEGARDER ──
 async function saveData() {
-  if (isDemo()) return;
+  // Comptes démo → sauvegarde locale uniquement (localStorage)
+  if (isDemo()) {
+    if (!currentUser) return;
+    var demoKey = 'bvm_demo_' + currentUser.u;
+    var demoData = { equip: EQUIP, cq: CQ, nc: NC, updated_at: new Date().toISOString() };
+    try { localStorage.setItem(demoKey, JSON.stringify(demoData)); } catch(e) {}
+    return;
+  }
   var key = currentUser.u;
   var data = {
     id: key,
@@ -2793,11 +3097,21 @@ async function saveData() {
 
 // ── CHARGER ──
 async function loadData(userKey) {
-  // Comptes démo → données de démo
+  // Comptes démo → restaurer depuis localStorage si des données locales existent, sinon données de démo
   if (DEMO_ACCS.indexOf(userKey) !== -1) {
-    EQUIP.length = 0; DEMO_EQUIP.forEach(function(e){ EQUIP.push(JSON.parse(JSON.stringify(e))); });
-    CQ.length    = 0; DEMO_CQ.forEach(function(c){ CQ.push(JSON.parse(JSON.stringify(c))); });
-    NC.length    = 0; DEMO_NC.forEach(function(n){ NC.push(JSON.parse(JSON.stringify(n))); });
+    var demoKey = 'bvm_demo_' + userKey;
+    var demoSaved = null;
+    try { demoSaved = JSON.parse(localStorage.getItem(demoKey)); } catch(e) {}
+    if (demoSaved && (demoSaved.equip || demoSaved.cq || demoSaved.nc)) {
+      EQUIP.length = 0; (demoSaved.equip||[]).forEach(function(e){ EQUIP.push(e); });
+      CQ.length    = 0; (demoSaved.cq||[]).forEach(function(c){ CQ.push(c); });
+      NC.length    = 0; (demoSaved.nc||[]).forEach(function(n){ NC.push(n); });
+      console.log('Données démo restaurées depuis localStorage ✓');
+    } else {
+      EQUIP.length = 0; DEMO_EQUIP.forEach(function(e){ EQUIP.push(JSON.parse(JSON.stringify(e))); });
+      CQ.length    = 0; DEMO_CQ.forEach(function(c){ CQ.push(JSON.parse(JSON.stringify(c))); });
+      NC.length    = 0; DEMO_NC.forEach(function(n){ NC.push(JSON.parse(JSON.stringify(n))); });
+    }
     return;
   }
 
@@ -2853,7 +3167,7 @@ function saveAndToast(msg) {
   });
 }
 
-// ── Bannière état connexion DB ──
+// ── Bannière état connexion Supabase ──
 function showFirebaseBanner() {
   var banner = document.getElementById('firebase-banner');
   if (!banner) return;
@@ -2863,10 +3177,6 @@ function showFirebaseBanner() {
   } else {
     banner.style.display = 'none';
   }
-}
-function hideFirebaseBanner() {
-  var banner = document.getElementById('firebase-banner');
-  if (banner) banner.style.display = 'none';
 }
 function hideFirebaseBanner() {
   var banner = document.getElementById('firebase-banner');
@@ -2950,7 +3260,7 @@ window.testSupabase = testSupabase;
   </div>
 </div>
 
-<!-- Bannière configuration Firebase -->
+<!-- Bannière état connexion Supabase -->
 <div id="firebase-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1e3a5f;color:#fff;padding:12px 20px;z-index:9998;align-items:center;justify-content:space-between;gap:12px;font-size:.78rem;">
   <div>
     <strong>⚠ Mode hors-ligne</strong> — Les données sont sauvegardées localement uniquement (ce navigateur). Vérifiez votre connexion internet.
